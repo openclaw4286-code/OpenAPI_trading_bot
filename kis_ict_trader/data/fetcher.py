@@ -103,7 +103,11 @@ async def get_daily_ohlcv(
             break
         if oldest_dt <= start_dt:
             break
-        cursor = oldest_dt - timedelta(days=1)
+        next_cursor = oldest_dt - timedelta(days=1)
+        # Safety: if the server fails to advance us, abort rather than loop.
+        if next_cursor >= cursor:
+            break
+        cursor = next_cursor
 
     df = _normalize_daily(rows)
     if df.empty:
