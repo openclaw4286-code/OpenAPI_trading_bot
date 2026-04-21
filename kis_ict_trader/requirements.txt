@@ -1,0 +1,28 @@
+# HTTP / WebSocket
+httpx>=0.27
+websockets>=12.0
+
+# Data
+pandas>=2.2
+numpy>=1.26
+pyarrow>=15.0
+
+# Charts
+mplfinance>=0.12.10b0
+matplotlib>=3.8
+
+# Scheduling
+APScheduler>=3.10
+
+# Config / env
+python-dotenv>=1.0
+
+# Parsing / scraping
+beautifulsoup4>=4.12
+lxml>=5.0
+
+# Utils
+python-dateutil>=2.9
+pytz>=2024.1
+tenacity>=8.2
+orjson>=3.10

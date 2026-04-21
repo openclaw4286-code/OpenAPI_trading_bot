@@ -1,5 +1,5 @@
 # Logs
-logs
+/logs
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -137,3 +137,33 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Virtual envs
+.venv/
+venv/
+env/
+ENV/
+
+# Project runtime artifacts
+kis_ict_trader/state/token_cache.json
+kis_ict_trader/state/*.json
+kis_ict_trader/logs/*
+!kis_ict_trader/logs/.gitkeep
+kis_ict_trader/backtest_results/*
+!kis_ict_trader/backtest_results/.gitkeep
+kis_ict_trader/data/cache/*
+!kis_ict_trader/data/cache/.gitkeep
+
