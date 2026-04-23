@@ -1,0 +1,32 @@
+# Dev / small-deployment compose file.
+#
+#   docker compose up -d                    # run scheduler
+#   docker compose run --rm trader --once   # one-shot invocation
+#   docker compose run --rm trader --build-universe
+#   docker compose logs -f trader
+
+services:
+  trader:
+    build: .
+    image: kis-ict-trader:latest
+    container_name: kis-ict-trader
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      TZ: Asia/Seoul
+    volumes:
+      # Persist state / logs / cache across restarts and rebuilds.
+      - ./var/state:/home/app/kis_ict_trader/state
+      - ./var/logs:/home/app/kis_ict_trader/logs
+      - ./var/cache:/home/app/kis_ict_trader/data/cache
+    healthcheck:
+      test: ["CMD", "python", "-m", "kis_ict_trader.deploy.healthcheck"]
+      interval: 5m
+      timeout: 10s
+      retries: 2
+      start_period: 2m
+    # The module has its own signal handlers for graceful shutdown;
+    # give it ~15s before docker escalates to SIGKILL.
+    stop_signal: SIGTERM
+    stop_grace_period: 15s

@@ -1,0 +1,35 @@
+.git
+.gitignore
+.github
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.venv
+venv
+.pytest_cache
+.mypy_cache
+.ruff_cache
+*.egg-info
+
+# IDE
+.idea
+.vscode
+*.swp
+
+# Local secrets / runtime state
+.env
+*.env.local
+kis_ict_trader/state/*.json
+kis_ict_trader/logs/
+kis_ict_trader/backtest_results/
+kis_ict_trader/data/cache/*.parquet
+kis_ict_trader/data/cache/*.csv
+kis_ict_trader/data/cache/*.json
+
+# Docs / misc
+README.md
+docs/
+*.md

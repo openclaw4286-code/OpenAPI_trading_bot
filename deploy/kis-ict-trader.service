@@ -1,0 +1,67 @@
+# systemd unit for running the KIS ICT Trader scheduler as a service.
+#
+# Install (once):
+#   sudo cp deploy/kis-ict-trader.service /etc/systemd/system/
+#   sudo mkdir -p /etc/kis-ict-trader
+#   sudo install -m 600 .env /etc/kis-ict-trader/.env
+#   sudo useradd -r -s /usr/sbin/nologin -d /opt/kis-ict-trader trader
+#   sudo chown -R trader:trader /opt/kis-ict-trader
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now kis-ict-trader.service
+#
+# Inspect:
+#   systemctl status kis-ict-trader
+#   journalctl -u kis-ict-trader -f
+
+[Unit]
+Description=KIS ICT Trader (scheduler)
+Documentation=https://github.com/openclaw4286-code/openapi_trading_bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=trader
+Group=trader
+WorkingDirectory=/opt/kis-ict-trader
+EnvironmentFile=/etc/kis-ict-trader/.env
+Environment=PYTHONUNBUFFERED=1
+Environment=TZ=Asia/Seoul
+
+# Expect the repo at /opt/kis-ict-trader with a venv at ./venv
+ExecStart=/opt/kis-ict-trader/venv/bin/python -m kis_ict_trader
+
+# Periodic healthcheck — journal will log exits != 0 for inspection.
+ExecStartPost=/bin/sleep 30
+WatchdogSec=0
+
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=15
+KillSignal=SIGTERM
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=kis-ict-trader
+
+# --- Hardening --------------------------------------------------------------
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+# matplotlib / numpy need JIT-ish pages, so don't deny write+exec
+MemoryDenyWriteExecute=false
+RestrictRealtime=true
+# Allow writes only where the app actually needs them.
+ReadWritePaths=/opt/kis-ict-trader/kis_ict_trader/state \
+               /opt/kis-ict-trader/kis_ict_trader/logs \
+               /opt/kis-ict-trader/kis_ict_trader/data/cache \
+               /opt/kis-ict-trader/kis_ict_trader/backtest_results
+
+[Install]
+WantedBy=multi-user.target
