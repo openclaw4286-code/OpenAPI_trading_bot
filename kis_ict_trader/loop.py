@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -49,7 +50,12 @@ from .algorithm.position_manager import (
 )
 from .algorithm.position_sizing import SizingResult, compute_size
 from .chart.renderer import render_signal_charts
-from .data.fetcher import get_current_price, get_daily_ohlcv, get_minute_ohlcv
+from .data.fetcher import (
+    get_current_price,
+    get_daily_ohlcv,
+    get_historical_minute_ohlcv,
+    get_minute_ohlcv,
+)
 from .data.universe import load_daily_universe
 from .execution.kis_client import KISClient
 from .execution.order_lifecycle import (
@@ -87,6 +93,18 @@ HTF_LOOKBACK_DAYS: int = 365
 MIN_HTF_BARS: int = 40
 MIN_LTF_BARS: int = 20
 DEFAULT_CONCURRENCY: int = 6
+
+# MTF source selection (env-configurable; default preserves existing
+# D/D/15m behaviour so deployments aren't forced onto the historical
+# minute endpoint until they opt in):
+#   "daily"          — MTF = daily (legacy, used when history minutes
+#                       aren't available or the operator wants a lower
+#                       API-call profile)
+#   "h4"             — MTF = 240-minute bars built from past-session
+#                       minutes via get_historical_minute_ohlcv. Matches
+#                       the ICT spec (D / 4h / 15m).
+MTF_MODE_ENV: str = os.getenv("KIS_MTF_MODE", "daily").strip().lower()
+MTF_H4_DAYS_BACK: int = int(os.getenv("KIS_MTF_H4_DAYS_BACK", "20"))
 
 
 # ---------------------------------------------------------------------------
@@ -156,8 +174,25 @@ def _resample_weekly(daily: pd.DataFrame) -> pd.DataFrame:
 
 
 async def _fetch_frames(
-    client: KISClient, ticker: str
+    client: KISClient,
+    ticker: str,
+    *,
+    mtf_mode: str | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame] | None:
+    """Return (HTF, MTF, LTF) for `ticker`.
+
+    HTF is weekly-resampled daily OHLCV (always).
+    LTF is 15-minute OHLCV for today (always).
+
+    MTF depends on `mtf_mode` (falls back to module default from
+    KIS_MTF_MODE):
+      "daily" → daily OHLCV (legacy; minimal API calls)
+      "h4"    → 4-hour bars built from past-session minute data via
+                get_historical_minute_ohlcv; if that returns too few
+                bars we fall back to daily so the pipeline still
+                produces a confluence snapshot.
+    """
+    mode = (mtf_mode or MTF_MODE_ENV).lower()
     today = datetime.now()
     start = today - timedelta(days=HTF_LOOKBACK_DAYS)
     daily = await get_daily_ohlcv(client, ticker, start, today)
@@ -166,7 +201,21 @@ async def _fetch_frames(
     htf = _resample_weekly(daily)
     if htf.empty or len(htf) < 10:
         return None
-    mtf = daily
+
+    if mode == "h4":
+        try:
+            h4 = await get_historical_minute_ohlcv(
+                client, ticker,
+                days_back=MTF_H4_DAYS_BACK, interval_minutes=240,
+            )
+        except Exception as e:
+            log.warning("h4 MTF fetch failed for %s: %s — falling back to daily",
+                        ticker, e)
+            h4 = pd.DataFrame()
+        mtf = h4 if (not h4.empty and len(h4) >= 10) else daily
+    else:
+        mtf = daily
+
     ltf = await get_minute_ohlcv(client, ticker, interval_minutes=15)
     if ltf.empty or len(ltf) < MIN_LTF_BARS:
         return None

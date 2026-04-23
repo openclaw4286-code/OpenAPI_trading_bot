@@ -80,9 +80,11 @@ TR_IDS: dict[str, dict[str, str]] = {
     "order_modify":    {"real": "TTTC0803U", "vps": "VTTC0803U"},
 
     # Market data (GET, same TR_ID on both envs)
-    "price_current": {"real": "FHKST01010100", "vps": "FHKST01010100"},
-    "chart_daily":   {"real": "FHKST03010100", "vps": "FHKST03010100"},
-    "chart_minute":  {"real": "FHKST03010200", "vps": "FHKST03010200"},
+    "price_current":      {"real": "FHKST01010100", "vps": "FHKST01010100"},
+    "chart_daily":        {"real": "FHKST03010100", "vps": "FHKST03010100"},
+    "chart_minute":       {"real": "FHKST03010200", "vps": "FHKST03010200"},
+    # Historical intraday (past-day minute bars, paged; STEP 21)
+    "chart_minute_daily": {"real": "FHKST03010230", "vps": "FHKST03010230"},
 
     # Account
     "balance": {"real": "TTTC8434R", "vps": "VTTC8434R"},
