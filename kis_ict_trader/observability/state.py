@@ -222,3 +222,23 @@ def record_daily_pnl(
     }
     out["daily_pnl"] = daily
     return out
+
+
+# ---------------------------------------------------------------------------
+# Retry-count persistence (used by loop.py for price-revise rate limiting)
+# ---------------------------------------------------------------------------
+def load_retry_counts(state: dict) -> dict[str, int]:
+    raw = state.get("retry_counts") or {}
+    out: dict[str, int] = {}
+    for k, v in raw.items():
+        try:
+            out[str(k)] = int(v)
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
+def set_retry_counts(state: dict, counts: dict[str, int]) -> dict:
+    out = dict(state)
+    out["retry_counts"] = {str(k): int(v) for k, v in counts.items() if v > 0}
+    return out

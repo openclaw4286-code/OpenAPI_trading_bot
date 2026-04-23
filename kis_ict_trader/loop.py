@@ -49,9 +49,15 @@ from .algorithm.position_manager import (
 )
 from .algorithm.position_sizing import SizingResult, compute_size
 from .chart.renderer import render_signal_charts
-from .data.fetcher import get_daily_ohlcv, get_minute_ohlcv
+from .data.fetcher import get_current_price, get_daily_ohlcv, get_minute_ohlcv
 from .data.universe import load_daily_universe
 from .execution.kis_client import KISClient
+from .execution.order_lifecycle import (
+    RetryAction,
+    RetryPolicy,
+    find_pending,
+    retry_stale_limits,
+)
 from .execution.orders import (
     AccountBalance,
     OrderRequest,
@@ -66,9 +72,11 @@ from .observability.notify import Notifier, NoopNotifier
 from .observability.state import (
     load_loop_state,
     load_positions,
+    load_retry_counts,
     record_run,
     save_loop_state,
     save_positions,
+    set_retry_counts,
 )
 from .signals.ictsignals import IctSnapshot, detect_all, evaluate_mtf_entry
 
@@ -124,6 +132,7 @@ class LoopReport:
     open_positions_before: int = 0
     open_positions_after: int = 0
     management: list[ManagementRecord] = field(default_factory=list)
+    retry_actions: list[RetryAction] = field(default_factory=list)
     error: str = ""
 
 
@@ -244,7 +253,17 @@ async def run_once(
     report.open_positions_before = len(open_positions)
     dry = bool(cfg.TEST_MODE) if dry_run is None else bool(dry_run)
 
+    persisted_state = load_loop_state()
+    retry_counts = load_retry_counts(persisted_state)
+
     try:
+        # -- refresh stale limit orders (cancel-replace) ------------------
+        try:
+            report.retry_actions = await _refresh_pending_orders(
+                client, notify=notify, dry=dry, retry_counts=retry_counts,
+            )
+        except Exception as e:
+            log.warning("retry refresh failed: %s", e)
         # -- universe ------------------------------------------------------
         if universe is None:
             u = load_daily_universe() or {}
@@ -419,6 +438,7 @@ async def run_once(
                 submitted=report.submitted,
                 error=report.error,
             )
+            loop_state = set_retry_counts(loop_state, retry_counts)
             save_loop_state(loop_state)
         except Exception:
             log.exception("observability persistence failed")
@@ -513,6 +533,69 @@ async def _manage_open_positions(
 
         if state.remaining_qty <= 0:
             open_positions.pop(symbol, None)
+
+
+async def _refresh_pending_orders(
+    client: KISClient,
+    *,
+    notify: Notifier,
+    dry: bool,
+    retry_counts: dict[str, int],
+    policy: RetryPolicy | None = None,
+) -> list[RetryAction]:
+    """Cancel-replace stale limit orders at the top of each tick.
+
+    In dry-run, the loop still *queries* pending orders (so the report
+    is honest about what's sitting unfilled) but never submits a
+    revise — that would touch the real account. Everything comes back
+    as `skipped:dry_run` in the audit list.
+    """
+    try:
+        pending = await find_pending(client)
+    except Exception as e:
+        log.warning("find_pending failed: %s", e)
+        return []
+    if not pending:
+        return []
+
+    if dry:
+        return [
+            RetryAction(
+                order_no=p.order_no, symbol=p.symbol, reason="skipped:dry_run",
+            )
+            for p in pending
+        ]
+
+    current_prices: dict[str, float] = {}
+    for status in pending:
+        try:
+            out = await get_current_price(client, status.symbol)
+            px = float(out.get("stck_prpr", 0) or 0)
+            if px > 0:
+                current_prices[status.symbol] = px
+        except Exception as e:
+            log.warning("price fetch failed for %s: %s", status.symbol, e)
+
+    actions = await retry_stale_limits(
+        client,
+        current_prices=current_prices,
+        policy=policy,
+        retry_counts=retry_counts,
+        pending=pending,
+    )
+
+    for act in actions:
+        if act.replace_result is not None and act.replace_result.ok:
+            await notify.info(
+                f"repriced {act.symbol}",
+                f"ord={act.order_no} reason={act.reason}",
+            )
+        elif act.replace_result is not None and not act.replace_result.ok:
+            await notify.warn(
+                f"reprice failed {act.symbol}",
+                f"ord={act.order_no} err={act.replace_result.error}",
+            )
+    return actions
 
 
 async def _submit_exit(
