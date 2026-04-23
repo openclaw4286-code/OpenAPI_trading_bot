@@ -36,7 +36,24 @@ class TestBuildPrompt:
         assert "(none)" in G.build_prompt(make_signal())
 
     def test_missing_charts_placeholder(self, make_signal):
-        assert "(not attached)" in G.build_prompt(make_signal())
+        assert "(paths, if attached):\n  (not attached)" \
+            in G.build_prompt(make_signal())
+
+    def test_rubric_dimensions_present(self, make_signal):
+        """The refined prompt explicitly lists the four scoring dimensions
+        so the LLM doesn't have to guess the rubric."""
+        p = G.build_prompt(make_signal())
+        for dim in ("Structure", "Context", "Risk / reward", "Session"):
+            assert dim in p
+
+    def test_few_shot_examples_included(self, make_signal):
+        """Calibration examples should appear so the LLM has anchor
+        points for confidence levels."""
+        p = G.build_prompt(make_signal())
+        assert "Examples" in p
+        # Anchor phrases — fragile-ish but cheap to update when the
+        # template moves. If the examples are yanked entirely, fail.
+        assert "earnings-window" in p or "rr below" in p
 
 
 class TestParseVerdict:

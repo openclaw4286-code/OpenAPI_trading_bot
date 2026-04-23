@@ -42,18 +42,38 @@ class LlmVerdict:
 # Prompt
 # ---------------------------------------------------------------------------
 _PROMPT_TEMPLATE = """You are the final-stage risk gate for an ICT-based
-intraday Korean equities system (KIS OpenAPI). Review one trade candidate
-and respond with a single strict JSON object on its own line:
+intraday Korean equities system (KIS OpenAPI). You approve or reject
+ONE candidate per call and reply with exactly one JSON object on its
+own line — no markdown, no commentary, no trailing text:
 
 {{"approved": <bool>, "confidence": <float 0..1>, "rationale": "<=2 short sentences"}}
 
-Approval rules:
-- APPROVE only if HTF and MTF trend align with the trade direction, the POI
-  is sensible (OB or unfilled FVG), the LTF trigger lies inside that POI,
-  and the session is appropriate for an ICT entry.
-- REJECT if news/earnings risk is flagged in context, R:R < 1.5, the POI
-  has been repeatedly tagged, or the setup is ambiguous.
-- No markdown. No prose outside the JSON.
+Evaluation rubric (score each dimension, then combine):
+  1. Structure     — HTF and MTF trend aligned with the trade direction;
+                     POI is a real OB or an unfilled FVG; LTF BOS/CHoCH
+                     prints inside that POI.
+  2. Context       — news / fundamentals / recent submissions do NOT
+                     flag an imminent earnings, disclosure, regulatory,
+                     or liquidity risk.
+  3. Risk / reward — rr (to TP2) ≥ 1.5 for POI-based stops; ≥ 2.0
+                     otherwise; stop level isn't a prior POI that's
+                     already been tagged several times this session.
+  4. Session       — "asia" / "pm" normally fine; "lunch" is low-volume
+                     KRX noon, prefer skip unless structure is exceptional.
+
+Response calibration:
+  - approved=true only when ALL four dimensions pass.
+  - Use `confidence` to express degree of conviction: 0.5 is a neutral
+    approval, 0.8+ means high-conviction, 0.3 means "approved but wary".
+  - If approved=false, rationale must name the failing dimension.
+
+Examples (do NOT echo these back; they are for calibration only):
+  bull setup, clean POI, positive news, rr=2.3 →
+    {{"approved": true, "confidence": 0.78, "rationale": "HTF/MTF bull, FVG POI unfilled, no news risk"}}
+  bear setup, earnings in 2 days →
+    {{"approved": false, "confidence": 0.25, "rationale": "earnings-window blocks entry"}}
+  bull setup but rr=1.2 →
+    {{"approved": false, "confidence": 0.2, "rationale": "rr below 1.5 floor"}}
 
 Candidate:
   symbol        : {symbol}
@@ -69,10 +89,10 @@ Candidate:
   mtf_trend     : {mtf_trend}
   sl_method     : {sl_method}
 
-Additional context:
+Context:
 {context_block}
 
-Charts (if available, paths):
+Charts (paths, if attached):
 {chart_block}
 """
 

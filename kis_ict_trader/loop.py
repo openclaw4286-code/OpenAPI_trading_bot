@@ -73,6 +73,7 @@ from .execution.orders import (
     place_order,
     reconcile_positions,
 )
+from .llm.context import build_signal_context
 from .llm.gate import CliRunner, LlmVerdict, evaluate_candidates
 from .observability.notify import Notifier, NoopNotifier
 from .observability.state import (
@@ -406,9 +407,21 @@ async def run_once(
                 except Exception as e:
                     log.warning("chart render failed for %s: %s", sig.symbol, e)
 
+        # -- context enrichment (news / fundamentals / price action) -----
+        context_by_symbol: dict[str, dict] = {}
+        for sig in sized:
+            rec = report.decisions.get(sig.symbol)
+            try:
+                context_by_symbol[sig.symbol] = await build_signal_context(
+                    sig, rec._ltf if rec is not None else None,
+                )
+            except Exception as e:
+                log.warning("context build failed for %s: %s", sig.symbol, e)
+
         # -- LLM gate ------------------------------------------------------
         verdicts = evaluate_candidates(
             sized,
+            context_by_symbol=context_by_symbol or None,
             chart_dir_by_symbol=chart_dirs or None,
             cli_runner=llm_runner,
         )
