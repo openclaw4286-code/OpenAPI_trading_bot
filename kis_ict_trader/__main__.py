@@ -38,6 +38,7 @@ from .data.universe import (
 )
 from .execution.kis_client import KISClient
 from .loop import LoopReport, run_once
+from .observability.notify import make_notifier
 
 
 log = logging.getLogger("kis_ict_trader")
@@ -102,7 +103,7 @@ def _log_report(report: LoopReport) -> None:
 # One-shot modes
 # ---------------------------------------------------------------------------
 async def _cmd_once(dry_run: bool | None) -> int:
-    report = await run_once(dry_run=dry_run)
+    report = await run_once(dry_run=dry_run, notifier=make_notifier())
     _log_report(report)
     return 0 if not report.error else 1
 
@@ -147,7 +148,7 @@ def _cron(hhmm: str) -> CronTrigger:
 
 async def _scheduled_run_once(dry_run: bool | None) -> None:
     try:
-        report = await run_once(dry_run=dry_run)
+        report = await run_once(dry_run=dry_run, notifier=make_notifier())
         _log_report(report)
     except Exception:
         log.exception("run_once tick failed")

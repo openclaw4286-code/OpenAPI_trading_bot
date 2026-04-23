@@ -42,6 +42,11 @@ from .algorithm.ict_strategy import (
     TradeSignal,
     build_signal,
 )
+from .algorithm.position_manager import (
+    ManagementAction,
+    PositionState,
+    manage_position,
+)
 from .algorithm.position_sizing import SizingResult, compute_size
 from .chart.renderer import render_signal_charts
 from .data.fetcher import get_daily_ohlcv, get_minute_ohlcv
@@ -49,6 +54,7 @@ from .data.universe import load_daily_universe
 from .execution.kis_client import KISClient
 from .execution.orders import (
     AccountBalance,
+    OrderRequest,
     ReconcileResult,
     build_entry_order,
     get_balance,
@@ -56,6 +62,14 @@ from .execution.orders import (
     reconcile_positions,
 )
 from .llm.gate import CliRunner, LlmVerdict, evaluate_candidates
+from .observability.notify import Notifier, NoopNotifier
+from .observability.state import (
+    load_loop_state,
+    load_positions,
+    record_run,
+    save_loop_state,
+    save_positions,
+)
 from .signals.ictsignals import IctSnapshot, detect_all, evaluate_mtf_entry
 
 
@@ -86,6 +100,17 @@ class PerSymbolResult:
 
 
 @dataclass
+class ManagementRecord:
+    symbol: str
+    kind: str                              # action kind (hold/move_stop/close_*)
+    qty: int
+    price: float
+    reason: str
+    submitted: bool                        # did an order actually go out?
+    detail: str = ""                       # order_no, error, or "dry_run"
+
+
+@dataclass
 class LoopReport:
     started_at: datetime
     finished_at: datetime
@@ -96,6 +121,9 @@ class LoopReport:
     submitted: list[tuple[str, bool, str]] = field(default_factory=list)
     llm_verdicts: list[LlmVerdict] = field(default_factory=list)
     reconcile: ReconcileResult | None = None
+    open_positions_before: int = 0
+    open_positions_after: int = 0
+    management: list[ManagementRecord] = field(default_factory=list)
     error: str = ""
 
 
@@ -200,6 +228,7 @@ async def run_once(
     chart_base_dir: Path | None = None,
     llm_runner: CliRunner | None = None,
     concurrency: int = DEFAULT_CONCURRENCY,
+    notifier: Notifier | None = None,
 ) -> LoopReport:
     started = datetime.now()
     report = LoopReport(
@@ -209,6 +238,11 @@ async def run_once(
     if client is None:
         client = KISClient()
         await client.__aenter__()
+
+    notify = notifier or NoopNotifier()
+    open_positions = load_positions()
+    report.open_positions_before = len(open_positions)
+    dry = bool(cfg.TEST_MODE) if dry_run is None else bool(dry_run)
 
     try:
         # -- universe ------------------------------------------------------
@@ -236,17 +270,24 @@ async def run_once(
             and r.decision.outcome == "signal"
             and r.decision.signal is not None
         ]
-        if not signals:
-            return report
 
         # -- balance + exposure -------------------------------------------
+        # Always fetch — both sizing and position management benefit
+        # from a fresh account snapshot.
         try:
             balance = await get_balance(client)
+            report.balance = balance
+            total_exp, by_sym = _exposure_from_balance(balance)
         except Exception as e:
-            report.error = f"balance_error: {e}"
+            log.warning("balance fetch failed: %s", e)
+            balance = None
+            total_exp, by_sym = 0.0, {}
+
+        if not signals or balance is None:
+            await _manage_open_positions(
+                client, open_positions, report, dry=dry, notify=notify,
+            )
             return report
-        report.balance = balance
-        total_exp, by_sym = _exposure_from_balance(balance)
 
         # -- sizing (running totals so caps apply cumulatively) -----------
         size_by_symbol: dict[str, int] = {}
@@ -268,6 +309,9 @@ async def run_once(
 
         sized = [s for s in signals if size_by_symbol.get(s.symbol, 0) > 0]
         if not sized:
+            await _manage_open_positions(
+                client, open_positions, report, dry=dry, notify=notify,
+            )
             return report
 
         # -- charts --------------------------------------------------------
@@ -312,7 +356,6 @@ async def run_once(
         report.reconcile = rec_result
 
         # -- submit --------------------------------------------------------
-        dry = bool(cfg.TEST_MODE) if dry_run is None else bool(dry_run)
         for sig in rec_result.to_submit:
             qty = size_by_symbol[sig.symbol]
             req = build_entry_order(sig, qty)
@@ -320,17 +363,66 @@ async def run_once(
                 report.submitted.append((
                     sig.symbol, True, f"dry_run qty={qty} @ {sig.entry}",
                 ))
+                open_positions[sig.symbol] = PositionState.from_signal(sig, qty)
+                await notify.info(
+                    f"entry {sig.symbol} (dry)",
+                    f"qty={qty} @ {sig.entry:.2f} stop={sig.stop:.2f} "
+                    f"tp={[round(t,2) for t in sig.targets]} rr={sig.rr:.2f}",
+                )
                 continue
             res = await place_order(client, req)
-            report.submitted.append((
-                sig.symbol, res.ok, res.error or res.order_no,
-            ))
+            detail = res.error or res.order_no
+            report.submitted.append((sig.symbol, res.ok, detail))
+            if res.ok:
+                open_positions[sig.symbol] = PositionState.from_signal(sig, qty)
+                await notify.info(
+                    f"entry {sig.symbol}",
+                    f"qty={qty} @ {sig.entry:.2f} stop={sig.stop:.2f} "
+                    f"ord={res.order_no}",
+                )
+            else:
+                await notify.warn(
+                    f"entry failed {sig.symbol}", detail,
+                )
+
+        # -- manage open positions ----------------------------------------
+        await _manage_open_positions(
+            client, open_positions, report, dry=dry, notify=notify,
+        )
 
     except Exception as e:
         log.exception("run_once failed")
         report.error = f"{type(e).__name__}: {e}"
+        try:
+            await notify.error("run_once exception", str(e))
+        except Exception:
+            pass
     finally:
         report.finished_at = datetime.now()
+        report.open_positions_after = len(open_positions)
+
+        # persist observability state
+        try:
+            save_positions(open_positions)
+            loop_state = load_loop_state()
+            n_signals = sum(
+                1 for r in report.decisions.values()
+                if r.decision and r.decision.outcome == "signal"
+            )
+            loop_state = record_run(
+                loop_state,
+                started_at=report.started_at,
+                finished_at=report.finished_at,
+                universe_size=report.universe_size,
+                n_signals=n_signals,
+                n_approved=len(report.approved),
+                submitted=report.submitted,
+                error=report.error,
+            )
+            save_loop_state(loop_state)
+        except Exception:
+            log.exception("observability persistence failed")
+
         # drop heavy transient frames before the report leaves this scope
         for r in report.decisions.values():
             r._htf = r._mtf = r._ltf = None
@@ -339,3 +431,135 @@ async def run_once(
             await client.close()
 
     return report
+
+
+# ---------------------------------------------------------------------------
+# Position management
+# ---------------------------------------------------------------------------
+async def _frames_for_managed(
+    client: KISClient,
+    symbol: str,
+    report: LoopReport,
+) -> tuple[pd.DataFrame, IctSnapshot] | None:
+    """Reuse frames already fetched this cycle; fall back to a fresh
+    fetch for positions held outside today's universe."""
+    rec = report.decisions.get(symbol)
+    if rec is not None and rec._ltf is not None:
+        ltf = rec._ltf
+        if rec._ltf_snap is None:
+            rec._ltf_snap = detect_all(ltf)
+        return ltf, rec._ltf_snap
+    try:
+        frames = await _fetch_frames(client, symbol)
+    except Exception as e:
+        log.warning("management fetch failed for %s: %s", symbol, e)
+        return None
+    if frames is None:
+        return None
+    _, _, ltf = frames
+    return ltf, detect_all(ltf)
+
+
+async def _manage_open_positions(
+    client: KISClient,
+    open_positions: dict[str, PositionState],
+    report: LoopReport,
+    *,
+    dry: bool,
+    notify: Notifier,
+) -> None:
+    """Run position_manager.manage_position against each open position,
+    translate the resulting actions into KIS orders, and clear symbols
+    that have been fully closed out."""
+    if not open_positions:
+        return
+
+    for symbol in list(open_positions.keys()):
+        state = open_positions[symbol]
+        got = await _frames_for_managed(client, symbol, report)
+        if got is None:
+            report.management.append(ManagementRecord(
+                symbol=symbol, kind="hold", qty=0, price=0.0,
+                reason="no_frames", submitted=False,
+            ))
+            continue
+        ltf, snap = got
+        bar = ltf.iloc[-1]
+        actions = manage_position(state, bar, snap.swings)
+
+        for act in actions:
+            if act.kind == "hold":
+                report.management.append(ManagementRecord(
+                    symbol=symbol, kind="hold", qty=0, price=0.0,
+                    reason=act.reason, submitted=False,
+                ))
+                continue
+
+            if act.kind == "move_stop":
+                # State-only change — no broker stop order in this pipeline;
+                # the next bar's manage_position() will detect a real stop hit.
+                report.management.append(ManagementRecord(
+                    symbol=symbol, kind="move_stop", qty=0,
+                    price=act.price, reason=act.reason,
+                    submitted=False, detail="state_only",
+                ))
+                continue
+
+            if act.kind in ("close_partial", "close_all"):
+                await _submit_exit(
+                    client, symbol, act, state, report,
+                    dry=dry, notify=notify,
+                )
+
+        if state.remaining_qty <= 0:
+            open_positions.pop(symbol, None)
+
+
+async def _submit_exit(
+    client: KISClient,
+    symbol: str,
+    act: ManagementAction,
+    state: PositionState,
+    report: LoopReport,
+    *,
+    dry: bool,
+    notify: Notifier,
+) -> None:
+    side = "sell" if state.signal.direction == "bull" else "buy"
+    # stop_hit is a live risk event → market order; targets are limits.
+    division = "market" if act.reason == "stop_hit" else "limit"
+    req = OrderRequest(
+        symbol=symbol, side=side, quantity=int(act.qty),
+        division=division,
+        price=(0.0 if division == "market" else float(act.price)),
+        client_tag=f"exit:{act.reason}",
+    )
+
+    if dry:
+        report.management.append(ManagementRecord(
+            symbol=symbol, kind=act.kind, qty=int(act.qty),
+            price=float(act.price), reason=act.reason,
+            submitted=True, detail="dry_run",
+        ))
+        await notify.info(
+            f"exit {symbol} ({act.reason}, dry)",
+            f"{act.kind} qty={act.qty} @ {act.price:.2f}",
+        )
+        return
+
+    res = await place_order(client, req)
+    detail = res.error or res.order_no
+    report.management.append(ManagementRecord(
+        symbol=symbol, kind=act.kind, qty=int(act.qty),
+        price=float(act.price), reason=act.reason,
+        submitted=res.ok, detail=detail,
+    ))
+    if res.ok:
+        await notify.info(
+            f"exit {symbol} ({act.reason})",
+            f"{act.kind} qty={act.qty} @ {act.price:.2f} ord={res.order_no}",
+        )
+    else:
+        await notify.warn(
+            f"exit failed {symbol} ({act.reason})", detail,
+        )
