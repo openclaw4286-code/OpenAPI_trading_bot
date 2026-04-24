@@ -103,7 +103,6 @@ class BacktestReport:
     equity_curve: pd.Series = field(default_factory=lambda: pd.Series(dtype=float))
     quality_by_symbol: dict[str, SymbolQuality] = field(default_factory=dict)
     llm_rejected: int = 0              # count of signals blocked by llm_approve
-
     @property
     def total_return(self) -> float:
         if self.start_equity <= 0:
@@ -475,6 +474,355 @@ def backtest_many(
     for sym, df in frames_by_symbol.items():
         out[sym] = backtest_symbol(sym, df, start_equity=start_equity, **kw)
     return out
+
+
+# ---------------------------------------------------------------------------
+# Portfolio (shared equity) backtest
+# ---------------------------------------------------------------------------
+@dataclass
+class PortfolioBacktestReport:
+    """Multi-symbol report with a single shared equity curve.
+
+    Unlike `BacktestReport`, this reflects what the live loop actually
+    does: one pot of cash funds every symbol, cfg.SIZING caps apply
+    across all concurrent open positions, and a best-R:R candidate
+    wins the funding race when several symbols signal on the same day.
+    """
+    symbols: list[str]
+    start: pd.Timestamp
+    end: pd.Timestamp
+    start_equity: float
+    end_equity: float
+    equity_curve: pd.Series = field(
+        default_factory=lambda: pd.Series(dtype=float),
+    )
+    trades_by_symbol: dict[str, list[BacktestTrade]] = field(
+        default_factory=dict,
+    )
+    quality_by_symbol: dict[str, SymbolQuality] = field(default_factory=dict)
+    llm_rejected: int = 0
+    skipped_no_room: int = 0           # sizing failed (exposure / min-lot)
+
+    @property
+    def total_return(self) -> float:
+        if self.start_equity <= 0:
+            return 0.0
+        return (self.end_equity / self.start_equity) - 1.0
+
+    @property
+    def n_trades(self) -> int:
+        return sum(len(v) for v in self.trades_by_symbol.values())
+
+    @property
+    def n_wins(self) -> int:
+        return sum(
+            1 for tlist in self.trades_by_symbol.values()
+            for t in tlist if t.pnl_cash > 0
+        )
+
+    @property
+    def win_rate(self) -> float:
+        n = self.n_trades
+        return self.n_wins / n if n else 0.0
+
+    @property
+    def avg_r(self) -> float:
+        if self.n_trades == 0:
+            return 0.0
+        total = sum(
+            t.r_multiple
+            for tlist in self.trades_by_symbol.values() for t in tlist
+        )
+        return total / self.n_trades
+
+    @property
+    def max_drawdown(self) -> float:
+        if self.equity_curve.empty:
+            return 0.0
+        peak = self.equity_curve.cummax()
+        dd = (self.equity_curve - peak) / peak
+        return float(dd.min()) if not dd.empty else 0.0
+
+    def summary(self) -> dict:
+        return {
+            "symbols": self.symbols,
+            "start": str(self.start.date()),
+            "end": str(self.end.date()),
+            "start_equity": round(self.start_equity, 2),
+            "end_equity": round(self.end_equity, 2),
+            "total_return": round(self.total_return, 4),
+            "n_trades": self.n_trades,
+            "win_rate": round(self.win_rate, 4),
+            "avg_r": round(self.avg_r, 4),
+            "max_drawdown": round(self.max_drawdown, 4),
+            "llm_rejected": self.llm_rejected,
+            "skipped_no_room": self.skipped_no_room,
+        }
+
+
+def _record_closed_trade(
+    trade: BacktestTrade,
+    state: PositionState,
+    symbol: str,
+    exit_ts: pd.Timestamp,
+    qualities: dict[str, SymbolQuality],
+) -> float:
+    """Finalize a trade, copy MFE/MAE across, update per-symbol quality.
+    Returns the trade's pnl_cash so the caller can roll the equity curve."""
+    _finalize_trade(trade)
+    trade.max_favorable = float(state.max_favorable)
+    trade.max_adverse = float(state.max_adverse)
+    outcome = TradeOutcome(
+        symbol=symbol, direction=trade.direction,
+        entry=trade.entry_price, stop=trade.stop,
+        exit_price=float(trade.exit_price or trade.entry_price),
+        max_favorable=trade.max_favorable,
+        max_adverse=trade.max_adverse,
+    )
+    update_quality(qualities, outcome, now_iso=exit_ts.isoformat())
+    return trade.pnl_cash
+
+
+def _rebuild_signal_at_fill(
+    sig: TradeSignal,
+    fill_price: float,
+    fill_ts: pd.Timestamp,
+) -> TradeSignal:
+    """Shift stop / targets relative to the actual fill price so R:R
+    reflects the real entry, not the signal-bar close."""
+    r = abs(sig.entry - sig.stop) or 1e-9
+    if sig.direction == "bull":
+        stop_abs = fill_price - r
+        targets = [fill_price + (t - sig.entry) for t in sig.targets]
+    else:
+        stop_abs = fill_price + r
+        targets = [fill_price - (sig.entry - t) for t in sig.targets]
+    return TradeSignal(
+        symbol=sig.symbol, direction=sig.direction,
+        entry=fill_price, stop=stop_abs, targets=targets,
+        rr=sig.rr, poi_kind=sig.poi_kind,
+        trigger_kind=sig.trigger_kind, session=sig.session,
+        ts=fill_ts, meta=dict(sig.meta),
+    )
+
+
+def backtest_portfolio(
+    frames_by_symbol: dict[str, pd.DataFrame],
+    *,
+    start_equity: float = 100_000_000.0,
+    ltf_window: int = 30,
+    max_hold_bars: int = 10,
+    exit_target_idx: int = 1,
+    warmup_bars: int = 60,
+    split_exits: bool = False,
+    llm_approve: LlmApproveFn | None = None,
+) -> PortfolioBacktestReport:
+    """Multi-symbol backtest walking a common date index.
+
+    Shared equity pool. On each bar:
+      1. Every open position runs one exit step (manage_position or the
+         legacy stop/target/timeout path, depending on split_exits).
+         Flattened positions release their symbol_exposure slot.
+      2. Every symbol without an open trade is evaluated for a new
+         signal. Candidates are collected.
+      3. Candidates are ranked by R:R descending and allocated sequentially
+         through `compute_size`, which enforces `cfg.SIZING` single and
+         total exposure caps against the running exposure dict. Signals
+         that don't fit the remaining room are counted in
+         `skipped_no_room` and dropped.
+    """
+    if not frames_by_symbol:
+        return PortfolioBacktestReport(
+            symbols=[],
+            start=pd.Timestamp.min, end=pd.Timestamp.min,
+            start_equity=start_equity, end_equity=start_equity,
+        )
+
+    symbols = sorted(frames_by_symbol.keys())
+    frames: dict[str, pd.DataFrame] = {
+        s: frames_by_symbol[s].sort_index() for s in symbols
+    }
+    common_dates = sorted(set().union(*(df.index for df in frames.values())))
+    if not common_dates:
+        return PortfolioBacktestReport(
+            symbols=symbols,
+            start=pd.Timestamp.min, end=pd.Timestamp.min,
+            start_equity=start_equity, end_equity=start_equity,
+        )
+
+    equity = float(start_equity)
+    curve: dict[pd.Timestamp, float] = {common_dates[0]: equity}
+    trades_by_symbol: dict[str, list[BacktestTrade]] = {s: [] for s in symbols}
+    qualities: dict[str, SymbolQuality] = {}
+    open_trades: dict[str, BacktestTrade] = {}
+    open_states: dict[str, PositionState] = {}
+    bars_held: dict[str, int] = {}
+    gate_by_symbol: dict[str, SignalGate] = {s: SignalGate() for s in symbols}
+    symbol_exposure: dict[str, float] = {}
+    llm_rejected = 0
+    skipped_no_room = 0
+
+    for date in common_dates:
+        # ---- 1. Exit phase for open positions on today's bar ------------
+        for symbol in list(open_trades.keys()):
+            df = frames[symbol]
+            if date not in df.index:
+                continue
+            i = df.index.get_loc(date)
+            bar = df.iloc[i]
+            bars_held[symbol] += 1
+            trade = open_trades[symbol]
+            state = open_states[symbol]
+
+            closed = False
+            if split_exits:
+                flat = _split_exit_step(trade, state, bar, date)
+                if not flat and bars_held[symbol] >= max_hold_bars:
+                    trade.exit_tranches.append(ExitTranche(
+                        ts=date, price=float(bar["close"]),
+                        qty=int(state.remaining_qty), reason="timeout",
+                    ))
+                    state.remaining_qty = 0
+                    flat = True
+                if flat:
+                    closed = True
+            else:
+                hit = _check_exit(
+                    bar, trade.stop, trade.target, trade.direction,
+                )
+                if hit is None and bars_held[symbol] >= max_hold_bars:
+                    hit = ("timeout", float(bar["close"]))
+                if hit is not None:
+                    reason, price = hit
+                    trade.exit_tranches.append(ExitTranche(
+                        ts=date, price=float(price),
+                        qty=int(trade.qty), reason=reason,
+                    ))
+                    # Final bar update for MFE/MAE before closing.
+                    manage_position(state, bar)
+                    state.remaining_qty = 0
+                    closed = True
+
+            if closed:
+                equity += _record_closed_trade(
+                    trade, state, symbol, date, qualities,
+                )
+                trades_by_symbol[symbol].append(trade)
+                curve[date] = equity
+                symbol_exposure.pop(symbol, None)
+                open_trades.pop(symbol)
+                open_states.pop(symbol)
+                bars_held.pop(symbol)
+
+        # ---- 2. Signal phase: collect candidates across all symbols -----
+        candidates: list[tuple[str, TradeSignal, float, int]] = []
+        for symbol in symbols:
+            if symbol in open_trades:
+                continue
+            df = frames[symbol]
+            if date not in df.index:
+                continue
+            i = df.index.get_loc(date)
+            if i < warmup_bars or i + 1 >= len(df):
+                continue
+            snap = _frames_at(df, i, ltf_window)
+            if snap is None:
+                continue
+            htf, mtf, ltf = snap
+            try:
+                conf = evaluate_mtf_entry(htf, mtf, ltf)
+                dec = build_signal(
+                    symbol, conf, ltf,
+                    gate=gate_by_symbol[symbol], now_ts=date,
+                )
+            except Exception as e:
+                log.debug("portfolio signal error %s @ %s: %s", symbol, date, e)
+                continue
+            if dec.outcome != "signal" or dec.signal is None:
+                continue
+            sig = dec.signal
+            if sig.direction != "bull":
+                continue
+            fill_bar = df.iloc[i + 1]
+            fill_price = float(fill_bar["open"])
+            if fill_price <= 0:
+                continue
+            fill_sig = _rebuild_signal_at_fill(
+                sig, fill_price, df.index[i + 1],
+            )
+            if llm_approve is not None:
+                try:
+                    if not llm_approve(fill_sig, ltf):
+                        llm_rejected += 1
+                        continue
+                except Exception:
+                    llm_rejected += 1
+                    continue
+            candidates.append((symbol, fill_sig, fill_price, i))
+
+        # ---- 3. Sizing + entry: rr desc, running exposure ---------------
+        candidates.sort(key=lambda c: c[1].rr, reverse=True)
+        total_exp = sum(symbol_exposure.values())
+        for symbol, fill_sig, fill_price, i in candidates:
+            sr: SizingResult = compute_size(
+                fill_sig, equity=equity,
+                current_total_exposure=total_exp,
+                current_symbol_exposure=symbol_exposure.get(symbol, 0.0),
+            )
+            if sr.reason != "ok" or sr.shares <= 0:
+                skipped_no_room += 1
+                continue
+            df = frames[symbol]
+            trade = BacktestTrade(
+                symbol=symbol, direction="bull",
+                entry_ts=df.index[i + 1], entry_price=fill_price,
+                stop=fill_sig.stop,
+                target=fill_sig.targets[exit_target_idx],
+                qty=sr.shares,
+            )
+            open_trades[symbol] = trade
+            open_states[symbol] = PositionState.from_signal(
+                fill_sig, qty=sr.shares,
+            )
+            bars_held[symbol] = 0
+            symbol_exposure[symbol] = sr.position_pct
+            total_exp += sr.position_pct
+
+    # ---- Flush still-open trades at the last shared date ----------------
+    last_date = common_dates[-1]
+    for symbol in list(open_trades.keys()):
+        df = frames[symbol]
+        # The trade may have been on a symbol whose last bar precedes last_date
+        last_sym_date = df.index[-1]
+        last_px = float(df.iloc[-1]["close"])
+        trade = open_trades[symbol]
+        state = open_states[symbol]
+        trade.exit_tranches.append(ExitTranche(
+            ts=last_sym_date, price=last_px,
+            qty=int(state.remaining_qty), reason="eod",
+        ))
+        state.remaining_qty = 0
+        equity += _record_closed_trade(
+            trade, state, symbol, last_sym_date, qualities,
+        )
+        trades_by_symbol[symbol].append(trade)
+        curve[last_date] = equity
+
+    equity_curve = pd.Series(curve).sort_index()
+    equity_curve = equity_curve.reindex(common_dates).ffill().fillna(
+        start_equity
+    )
+
+    return PortfolioBacktestReport(
+        symbols=symbols,
+        start=common_dates[0], end=common_dates[-1],
+        start_equity=start_equity, end_equity=float(equity),
+        equity_curve=equity_curve,
+        trades_by_symbol=trades_by_symbol,
+        quality_by_symbol=qualities,
+        llm_rejected=llm_rejected,
+        skipped_no_room=skipped_no_room,
+    )
 
 
 # ---------------------------------------------------------------------------
