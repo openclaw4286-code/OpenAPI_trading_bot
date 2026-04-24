@@ -22,7 +22,6 @@ import matplotlib
 
 matplotlib.use("Agg")
 
-import matplotlib.dates as mdates  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
 import pandas as pd  # noqa: E402
 from matplotlib.patches import Rectangle  # noqa: E402
@@ -37,7 +36,6 @@ from ..signals.ictsignals import (
     StructureEvent,
     SwingPoint,
 )
-
 
 log = logging.getLogger(__name__)
 

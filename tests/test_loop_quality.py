@@ -106,9 +106,9 @@ def test_last_exit_price_picks_most_recent():
     """The loop helper that sources the exit price for trade-outcome
     logging must read the last close_* action for the symbol, ignoring
     hold / move_stop / other symbols."""
-    from kis_ict_trader.loop import ManagementRecord, LoopReport, \
-        _last_exit_price
     from datetime import datetime
+
+    from kis_ict_trader.loop import LoopReport, ManagementRecord, _last_exit_price
 
     rep = LoopReport(
         started_at=datetime.now(), finished_at=datetime.now(),

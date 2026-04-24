@@ -16,7 +16,6 @@ from typing import Literal
 
 import httpx
 
-
 log = logging.getLogger(__name__)
 
 Level = Literal["info", "warn", "error"]
@@ -122,5 +121,5 @@ def make_notifier(
     u = (url if url is not None else os.getenv(ENV_WEBHOOK_URL, "")).strip()
     if not u:
         return NoopNotifier()
-    p = (provider or os.getenv(ENV_PROVIDER, "slack")).strip().lower()
+    p = (provider or os.getenv(ENV_PROVIDER, "slack") or "slack").strip().lower()
     return WebhookNotifier(u, p)

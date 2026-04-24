@@ -36,16 +36,13 @@ Additional hooks:
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime
-from typing import Callable, Sequence
 
 import pandas as pd
 
-from .. import config as cfg
 from ..algorithm.ict_strategy import SignalGate, TradeSignal, build_signal
 from ..algorithm.position_manager import (
-    ManagementAction,
     PositionState,
     manage_position,
 )
@@ -56,7 +53,6 @@ from ..algorithm.signal_quality import (
     update_quality,
 )
 from ..signals.ictsignals import evaluate_mtf_entry
-
 
 log = logging.getLogger(__name__)
 
@@ -247,12 +243,7 @@ def _split_exit_step(
     trade and return True if the position is now flat."""
     actions = manage_position(state, bar)
     for act in actions:
-        if act.kind == "close_partial":
-            trade.exit_tranches.append(ExitTranche(
-                ts=ts, price=float(act.price), qty=int(act.qty),
-                reason=act.reason,
-            ))
-        elif act.kind == "close_all":
+        if act.kind == "close_partial" or act.kind == "close_all":
             trade.exit_tranches.append(ExitTranche(
                 ts=ts, price=float(act.price), qty=int(act.qty),
                 reason=act.reason,

@@ -1,0 +1,92 @@
+[project]
+name = "kis_ict_trader"
+description = "KIS OpenAPI ICT trading agent."
+version = "0.0.0"
+requires-python = ">=3.11"
+
+# ---------------------------------------------------------------------------
+# Ruff: linter + import sort. Run locally with `ruff check .`.
+# Keep the rule set conservative — we layer it up over time rather than
+# chasing a style battle with a large existing codebase.
+# ---------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = [
+    "kis_ict_trader/backtest_results",
+    "kis_ict_trader/data/cache",
+    "kis_ict_trader/logs",
+    "kis_ict_trader/state",
+    "kis_ict_trader/__pycache__",
+    ".venv",
+    "build",
+    "dist",
+]
+
+[tool.ruff.lint]
+# E/W  – pycodestyle
+# F    – pyflakes (unused, undefined, re-imports)
+# I    – isort
+# UP   – pyupgrade (py311+ idioms)
+# B    – flake8-bugbear (mutable defaults, loop vars, etc.)
+# SIM  – flake8-simplify
+select = ["E", "W", "F", "I", "UP", "B", "SIM"]
+ignore = [
+    "E501",   # line too long — we already clamp to 100; long dict lines OK
+    "B008",   # function call as default — we rely on it sparingly
+    "SIM108", # ternary nudge — reduces readability in several places
+    "SIM117", # nested with  — often clearer expanded
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = [
+    "E402",  # module-level import not at top — test files set env first
+    "F401",  # occasional import for fixture side effects
+]
+"kis_ict_trader/chart/renderer.py" = [
+    "E402",  # matplotlib.use("Agg") must precede pyplot import
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["kis_ict_trader"]
+
+# ---------------------------------------------------------------------------
+# mypy: pragmatic config. Strictness is opt-in per module as we clean up.
+# ---------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+follow_imports = "silent"
+warn_redundant_casts = true
+warn_unused_ignores = false
+check_untyped_defs = false        # let untyped helpers slide for now
+disallow_untyped_defs = false
+no_implicit_optional = true
+show_error_codes = true
+exclude = [
+    "tests/",
+    "kis_ict_trader/backtest_results/",
+    "kis_ict_trader/logs/",
+    "kis_ict_trader/state/",
+    "build/",
+    "dist/",
+]
+
+# Type-heavy modules we DO want to lock down over time. `signals.*`
+# is the purest layer (no external I/O), so it's the first to keep
+# `check_untyped_defs` on. Everything else stays with baseline mypy
+# for now; ratchet them in one module at a time as the code hardens.
+[[tool.mypy.overrides]]
+module = ["kis_ict_trader.signals.*"]
+check_untyped_defs = true
+
+# These talk to pandas/matplotlib/httpx which add tons of dynamic
+# attribute noise — keep mypy quiet there for now.
+[[tool.mypy.overrides]]
+module = [
+    "kis_ict_trader.chart.*",
+    "kis_ict_trader.data.*",
+    "kis_ict_trader.execution.kis_client",
+    "kis_ict_trader.backtest.*",
+]
+ignore_errors = true

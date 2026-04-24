@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import contextlib
 import json
 import logging
 import signal
@@ -39,7 +40,6 @@ from .data.universe import (
 from .execution.kis_client import KISClient
 from .loop import LoopReport, run_once
 from .observability.notify import make_notifier
-
 
 log = logging.getLogger("kis_ict_trader")
 
@@ -206,11 +206,9 @@ async def _run_scheduler(dry_run: bool | None) -> int:
     stop = asyncio.Event()
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
-        try:
+        # Windows fallback — signals fall through to KeyboardInterrupt there.
+        with contextlib.suppress(NotImplementedError):
             loop.add_signal_handler(sig, stop.set)
-        except NotImplementedError:
-            # Windows fallback — signals will fall through to KeyboardInterrupt.
-            pass
 
     try:
         await stop.wait()

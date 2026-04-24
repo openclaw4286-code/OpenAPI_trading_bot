@@ -24,7 +24,6 @@ import pandas as pd
 from .. import config as cfg
 from ..signals.ictsignals import Direction, MtfConfluence
 
-
 log = logging.getLogger(__name__)
 
 MARKET_CLOSE_GUARD_MIN: int = 30

@@ -11,8 +11,9 @@ from __future__ import annotations
 import asyncio
 import json
 import time
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 
 import httpx
 
@@ -121,7 +122,7 @@ class KISClient:
         self._http: httpx.AsyncClient | None = None
 
     # --- context manager --------------------------------------------------
-    async def __aenter__(self) -> "KISClient":
+    async def __aenter__(self) -> KISClient:
         await self._ensure_http()
         return self
 
@@ -289,10 +290,10 @@ class KISClient:
     def _handle_response(r: httpx.Response) -> dict:
         try:
             j = r.json()
-        except Exception:
+        except Exception as e:
             raise KISAPIError(
                 r.status_code, "", "", r.text[:200], {"text": r.text}
-            )
+            ) from e
 
         if r.status_code != 200:
             raise KISAPIError(

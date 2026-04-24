@@ -17,13 +17,12 @@ import json
 import logging
 import re
 import subprocess
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable
 
 from .. import config as cfg
 from ..algorithm.ict_strategy import TradeSignal
-
 
 log = logging.getLogger(__name__)
 

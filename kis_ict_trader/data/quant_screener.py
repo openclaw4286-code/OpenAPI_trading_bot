@@ -13,15 +13,14 @@ Output: ranked list of ScreenResult capped at `cfg.UNIVERSE_TOP_N`.
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
 import numpy as np
 import pandas as pd
 
 from .. import config as cfg
 from .fundamentals import Fundamentals
-
 
 log = logging.getLogger(__name__)
 

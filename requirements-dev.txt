@@ -1,3 +1,5 @@
-# Test-only dependencies (not needed in the runtime image).
+# Dev / CI dependencies (not needed in the runtime image).
 pytest>=8.0
 pytest-asyncio>=0.23
+ruff>=0.5
+mypy>=1.10

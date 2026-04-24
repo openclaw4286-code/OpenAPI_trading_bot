@@ -11,7 +11,6 @@ from kis_ict_trader.signals import ictsignals as S
 def _frame_with_pivots():
     # 60-bar 15-min frame with engineered pivots at idx 8 (low) and 15 (high)
     n = 60
-    rng = np.random.default_rng(0)
     idx = pd.date_range("2026-04-22 09:00", periods=n, freq="15min")
     c = np.concatenate([np.linspace(100, 130, 40), np.linspace(130, 120, 20)])
     hi = c + 0.5

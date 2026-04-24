@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import Any
 
 from dotenv import load_dotenv
 
@@ -124,7 +125,7 @@ TIMEZONE: str = "Asia/Seoul"
 # Universe selection
 # ---------------------------------------------------------------------------
 UNIVERSE_TOP_N: int = 20
-HARD_FILTER: dict[str, object] = {
+HARD_FILTER: dict[str, Any] = {
     "min_market_cap_krw":         500_000_000_000,   # 5,000억
     "min_avg_volume_20d_shares":  500_000,           # 50만주
     "exclude_listed_months_below": 6,
@@ -150,7 +151,7 @@ QUANT_VOL_ADJ_RET_WINDOW: int = 60
 # ---------------------------------------------------------------------------
 # ICT algorithm parameters
 # ---------------------------------------------------------------------------
-ICT: dict[str, object] = {
+ICT: dict[str, Any] = {
     # Timeframes
     "htf_tf": "D",
     "mtf_tf": "240",  # 4h
@@ -194,7 +195,7 @@ ICT: dict[str, object] = {
 # ---------------------------------------------------------------------------
 # Position sizing
 # ---------------------------------------------------------------------------
-SIZING: dict[str, object] = {
+SIZING: dict[str, Any] = {
     "win_rate":             0.55,        # 켈리 고정 승률
     "half_kelly":           True,
     "max_position_pct":     0.20,        # 켈리 산출 상한
@@ -221,7 +222,7 @@ TICK_TABLE_KRX: list[tuple[float, int]] = [
 # ---------------------------------------------------------------------------
 # LLM — Claude Max CLI (no API key)
 # ---------------------------------------------------------------------------
-LLM: dict[str, object] = {
+LLM: dict[str, Any] = {
     "cli_binary":         "claude",
     "model":              "claude-opus-4-6",
     "timeout_sec":        90,

@@ -26,9 +26,10 @@ The retry policy is intentionally conservative:
 from __future__ import annotations
 
 import logging
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import date, datetime
-from typing import Any, Literal, Mapping
+from typing import Any, Literal
 
 from .. import config as cfg
 from .kis_client import KISAPIError
@@ -40,7 +41,6 @@ from .orders import (
     _safe_int,
     cancel_order,
 )
-
 
 log = logging.getLogger(__name__)
 

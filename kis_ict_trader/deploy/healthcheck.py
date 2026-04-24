@@ -21,10 +21,10 @@ from __future__ import annotations
 
 import json
 import sys
-from datetime import date, datetime, time as dtime, timedelta
+from datetime import datetime, timedelta
+from datetime import time as dtime
 
 from .. import config as cfg
-
 
 STALE_THRESHOLD_MIN: int = 5
 

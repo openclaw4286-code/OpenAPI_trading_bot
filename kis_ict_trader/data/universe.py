@@ -25,7 +25,6 @@ from .fetcher import get_current_price, get_daily_ohlcv
 from .fundamentals import Fundamentals, get_fundamentals
 from .quant_screener import QuantCandidate, ScreenResult, screen
 
-
 log = logging.getLogger(__name__)
 
 CACHE_TICKERS_CSV = cfg.DIR_DATA_CACHE / "krx_tickers.csv"

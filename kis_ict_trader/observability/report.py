@@ -8,8 +8,8 @@ log. The summary shape is deliberately flat so downstream storage
 """
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping
 from datetime import date as _date
-from typing import Iterable, Mapping
 
 
 def _to_float(v, default: float = 0.0) -> float:

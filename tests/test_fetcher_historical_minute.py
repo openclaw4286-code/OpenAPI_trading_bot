@@ -109,7 +109,8 @@ async def test_resample_to_60min(monkeypatch, tmp_path):
     )
     # After 60-min resample we should have ≥ 1 bar
     assert not df.empty
-    assert df.index.freq is None or True  # idx is Timestamp-like
+    # Index is Timestamp-like (freq may or may not be set after resample).
+    assert isinstance(df.index, pd.DatetimeIndex)
     # Aggregated OHLCV columns
     assert set(df.columns) >= {"open", "high", "low", "close", "volume"}
 

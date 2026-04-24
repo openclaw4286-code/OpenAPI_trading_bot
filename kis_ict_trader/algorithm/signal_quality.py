@@ -22,9 +22,8 @@ from the universe before evaluation starts.
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
-
 
 log = logging.getLogger(__name__)
 
@@ -106,7 +105,7 @@ class SymbolQuality:
         }
 
     @classmethod
-    def from_dict(cls, d: dict) -> "SymbolQuality":
+    def from_dict(cls, d: dict) -> SymbolQuality:
         return cls(
             symbol=str(d.get("symbol", "")),
             n_trades=int(d.get("n_trades", 0)),

@@ -26,7 +26,6 @@ from dataclasses import dataclass, field
 from .. import config as cfg
 from .ict_strategy import TradeSignal
 
-
 log = logging.getLogger(__name__)
 
 

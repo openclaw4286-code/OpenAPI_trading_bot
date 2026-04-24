@@ -28,11 +28,13 @@ Dry-run rules:
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 import os
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Literal
 
 import pandas as pd
 
@@ -50,7 +52,6 @@ from .algorithm.position_manager import (
 )
 from .algorithm.position_sizing import SizingResult, compute_size
 from .algorithm.signal_quality import (
-    QualityFilter,
     SymbolQuality,
     TradeOutcome,
     filter_by_quality,
@@ -82,7 +83,7 @@ from .execution.orders import (
 )
 from .llm.context import build_signal_context
 from .llm.gate import CliRunner, LlmVerdict, evaluate_candidates
-from .observability.notify import Notifier, NoopNotifier
+from .observability.notify import NoopNotifier, Notifier
 from .observability.state import (
     load_loop_state,
     load_positions,
@@ -95,7 +96,6 @@ from .observability.state import (
     set_retry_counts,
 )
 from .signals.ictsignals import IctSnapshot, detect_all, evaluate_mtf_entry
-
 
 log = logging.getLogger(__name__)
 
@@ -435,10 +435,10 @@ async def run_once(
         # -- context enrichment (news / fundamentals / price action) -----
         context_by_symbol: dict[str, dict] = {}
         for sig in sized:
-            rec = report.decisions.get(sig.symbol)
+            rec_opt = report.decisions.get(sig.symbol)
             try:
                 context_by_symbol[sig.symbol] = await build_signal_context(
-                    sig, rec._ltf if rec is not None else None,
+                    sig, rec_opt._ltf if rec_opt is not None else None,
                 )
             except Exception as e:
                 log.warning("context build failed for %s: %s", sig.symbol, e)
@@ -499,10 +499,8 @@ async def run_once(
     except Exception as e:
         log.exception("run_once failed")
         report.error = f"{type(e).__name__}: {e}"
-        try:
+        with contextlib.suppress(Exception):
             await notify.error("run_once exception", str(e))
-        except Exception:
-            pass
     finally:
         report.finished_at = datetime.now()
         report.open_positions_after = len(open_positions)
@@ -724,9 +722,13 @@ async def _submit_exit(
     dry: bool,
     notify: Notifier,
 ) -> None:
-    side = "sell" if state.signal.direction == "bull" else "buy"
+    side: Literal["buy", "sell"] = (
+        "sell" if state.signal.direction == "bull" else "buy"
+    )
     # stop_hit is a live risk event → market order; targets are limits.
-    division = "market" if act.reason == "stop_hit" else "limit"
+    division: Literal["limit", "market"] = (
+        "market" if act.reason == "stop_hit" else "limit"
+    )
     req = OrderRequest(
         symbol=symbol, side=side, quantity=int(act.qty),
         division=division,

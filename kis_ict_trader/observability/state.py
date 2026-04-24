@@ -26,7 +26,6 @@ from ..algorithm.ict_strategy import TradeSignal
 from ..algorithm.position_manager import PositionState
 from ..algorithm.signal_quality import SymbolQuality
 
-
 log = logging.getLogger(__name__)
 
 PATH_POSITION_STATE: Path = cfg.DIR_STATE / "positions.json"
@@ -154,7 +153,7 @@ def save_positions(
 # ---------------------------------------------------------------------------
 def load_loop_state(path: Path | None = None) -> dict:
     p = path or cfg.PATH_LOOP_STATE
-    default = {
+    default: dict = {
         "last_run_at": None,
         "last_run_summary": None,
         "recent_submitted": [],

@@ -17,7 +17,6 @@ import pandas as pd
 
 from .. import config as cfg
 
-
 log = logging.getLogger(__name__)
 
 Direction = Literal["bull", "bear"]
@@ -153,16 +152,20 @@ def detect_structure(
             nxt = next(siter, None)
         price = close[i]
         if last_high is not None and price > last_high.price:
-            kind = "BOS" if trend == "bull" else "CHoCH"
+            kind_up: Literal["BOS", "CHoCH"] = (
+                "BOS" if trend == "bull" else "CHoCH"
+            )
             events.append(StructureEvent(
-                i, df.index[i], float(price), kind, "bull", last_high,
+                i, df.index[i], float(price), kind_up, "bull", last_high,
             ))
             trend = "bull"
             last_high = None
         elif last_low is not None and price < last_low.price:
-            kind = "BOS" if trend == "bear" else "CHoCH"
+            kind_dn: Literal["BOS", "CHoCH"] = (
+                "BOS" if trend == "bear" else "CHoCH"
+            )
             events.append(StructureEvent(
-                i, df.index[i], float(price), kind, "bear", last_low,
+                i, df.index[i], float(price), kind_dn, "bear", last_low,
             ))
             trend = "bear"
             last_low = None

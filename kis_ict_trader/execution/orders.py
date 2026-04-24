@@ -16,13 +16,13 @@ Design notes:
 from __future__ import annotations
 
 import logging
+from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import Any, Literal, Mapping, Protocol
+from typing import Any, Literal, Protocol
 
 from .. import config as cfg
 from ..algorithm.ict_strategy import TradeSignal
 from .kis_client import KISAPIError
-
 
 log = logging.getLogger(__name__)
 

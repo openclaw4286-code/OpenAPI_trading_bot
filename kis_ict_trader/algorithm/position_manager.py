@@ -25,14 +25,13 @@ right side of the existing stop for the trade direction.
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Literal
 
 import pandas as pd
 
 from ..signals.ictsignals import SwingPoint
 from .ict_strategy import TradeSignal
-
 
 log = logging.getLogger(__name__)
 
@@ -72,7 +71,7 @@ class PositionState:
     @classmethod
     def from_signal(
         cls, signal: TradeSignal, qty: int
-    ) -> "PositionState":
+    ) -> PositionState:
         return cls(
             signal=signal, initial_qty=int(qty),
             remaining_qty=int(qty), current_stop=float(signal.stop),

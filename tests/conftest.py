@@ -83,8 +83,8 @@ def make_signal():
 
 @pytest.fixture
 def make_bar():
-    def _make(o: float, h: float, l: float, c: float) -> pd.Series:
-        return pd.Series({"open": o, "high": h, "low": l, "close": c})
+    def _make(o: float, h: float, lo: float, c: float) -> pd.Series:
+        return pd.Series({"open": o, "high": h, "low": lo, "close": c})
     return _make
 
 

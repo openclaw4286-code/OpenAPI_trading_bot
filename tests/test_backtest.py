@@ -68,7 +68,7 @@ def test_forced_confluence_trades_execute_cleanly(monkeypatch):
     ) < 1e-6
 
     # No overlapping trades
-    for a, b in zip(rep.trades, rep.trades[1:]):
+    for a, b in zip(rep.trades, rep.trades[1:], strict=False):
         assert a.exit_ts < b.entry_ts
 
 
@@ -76,11 +76,11 @@ def test_csv_export_roundtrip(tmp_path, monkeypatch):
     df = _strong_uptrend()
     monkeypatch.setattr(
         R, "evaluate_mtf_entry",
-        lambda h, m, l: MtfConfluence(
-            "bull", "bull", len(l) - 1, float(l["close"].iloc[-1]),
+        lambda h, m, ltf: MtfConfluence(
+            "bull", "bull", len(ltf) - 1, float(ltf["close"].iloc[-1]),
             "BOS", "FVG",
-            (float(l["close"].iloc[-1]) * 0.985,
-             float(l["close"].iloc[-1]) * 0.995),
+            (float(ltf["close"].iloc[-1]) * 0.985,
+             float(ltf["close"].iloc[-1]) * 0.995),
             "pm", "bull",
         ),
     )

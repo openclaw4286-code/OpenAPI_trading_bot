@@ -12,7 +12,8 @@ sized signal list to `evaluate_candidates`.
 from __future__ import annotations
 
 import logging
-from typing import Any, Awaitable, Callable
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 import pandas as pd
 
@@ -20,7 +21,6 @@ from ..algorithm.ict_strategy import TradeSignal
 from ..data.fundamentals import Fundamentals, get_fundamentals
 from ..data.news import NewsItem, get_news
 from ..observability.state import load_loop_state
-
 
 log = logging.getLogger(__name__)
 
