@@ -49,6 +49,13 @@ from .algorithm.position_manager import (
     manage_position,
 )
 from .algorithm.position_sizing import SizingResult, compute_size
+from .algorithm.signal_quality import (
+    QualityFilter,
+    SymbolQuality,
+    TradeOutcome,
+    filter_by_quality,
+    update_quality,
+)
 from .chart.renderer import render_signal_charts
 from .data.fetcher import (
     get_current_price,
@@ -80,9 +87,11 @@ from .observability.state import (
     load_loop_state,
     load_positions,
     load_retry_counts,
+    load_signal_quality,
     record_run,
     save_loop_state,
     save_positions,
+    save_signal_quality,
     set_retry_counts,
 )
 from .signals.ictsignals import IctSnapshot, detect_all, evaluate_mtf_entry
@@ -106,6 +115,13 @@ DEFAULT_CONCURRENCY: int = 6
 #                       the ICT spec (D / 4h / 15m).
 MTF_MODE_ENV: str = os.getenv("KIS_MTF_MODE", "daily").strip().lower()
 MTF_H4_DAYS_BACK: int = int(os.getenv("KIS_MTF_H4_DAYS_BACK", "20"))
+
+# Opt-in universe pruning based on per-symbol signal quality
+# (avg_r / win_rate floors). Default off so early runs aren't
+# pre-biased by a tiny sample.
+QUALITY_FILTER_ENABLED: bool = (
+    os.getenv("KIS_QUALITY_FILTER", "0").strip() in ("1", "true", "True")
+)
 
 
 # ---------------------------------------------------------------------------
@@ -152,6 +168,8 @@ class LoopReport:
     open_positions_after: int = 0
     management: list[ManagementRecord] = field(default_factory=list)
     retry_actions: list[RetryAction] = field(default_factory=list)
+    quality_filter_dropped: dict[str, str] = field(default_factory=dict)
+    trade_outcomes: list[TradeOutcome] = field(default_factory=list)
     error: str = ""
 
 
@@ -305,6 +323,7 @@ async def run_once(
 
     persisted_state = load_loop_state()
     retry_counts = load_retry_counts(persisted_state)
+    qualities = load_signal_quality()
 
     try:
         # -- refresh stale limit orders (cancel-replace) ------------------
@@ -319,6 +338,12 @@ async def run_once(
             u = load_daily_universe() or {}
             entries = u.get("entries") or []
             universe = [str(e.get("ticker", "")) for e in entries if e.get("ticker")]
+        if QUALITY_FILTER_ENABLED and qualities:
+            universe, dropped = filter_by_quality(universe, qualities)
+            report.quality_filter_dropped = dropped
+            if dropped:
+                log.info("quality filter dropped %d symbols: %s",
+                         len(dropped), list(dropped)[:10])
         report.universe_size = len(universe)
         if not universe:
             report.error = "empty_universe"
@@ -354,7 +379,7 @@ async def run_once(
 
         if not signals or balance is None:
             await _manage_open_positions(
-                client, open_positions, report, dry=dry, notify=notify,
+                client, open_positions, report, dry=dry, notify=notify, qualities=qualities,
             )
             return report
 
@@ -379,7 +404,7 @@ async def run_once(
         sized = [s for s in signals if size_by_symbol.get(s.symbol, 0) > 0]
         if not sized:
             await _manage_open_positions(
-                client, open_positions, report, dry=dry, notify=notify,
+                client, open_positions, report, dry=dry, notify=notify, qualities=qualities,
             )
             return report
 
@@ -468,7 +493,7 @@ async def run_once(
 
         # -- manage open positions ----------------------------------------
         await _manage_open_positions(
-            client, open_positions, report, dry=dry, notify=notify,
+            client, open_positions, report, dry=dry, notify=notify, qualities=qualities,
         )
 
     except Exception as e:
@@ -502,6 +527,8 @@ async def run_once(
             )
             loop_state = set_retry_counts(loop_state, retry_counts)
             save_loop_state(loop_state)
+            if qualities:
+                save_signal_quality(qualities)
         except Exception:
             log.exception("observability persistence failed")
 
@@ -542,6 +569,17 @@ async def _frames_for_managed(
     return ltf, detect_all(ltf)
 
 
+def _last_exit_price(report: LoopReport, symbol: str) -> float | None:
+    """Pick the price of the most recent exit action recorded for a symbol.
+    Used to compute trade-outcome metrics when a position flattens."""
+    for rec in reversed(report.management):
+        if rec.symbol != symbol:
+            continue
+        if rec.kind in ("close_all", "close_partial") and rec.price:
+            return float(rec.price)
+    return None
+
+
 async def _manage_open_positions(
     client: KISClient,
     open_positions: dict[str, PositionState],
@@ -549,6 +587,7 @@ async def _manage_open_positions(
     *,
     dry: bool,
     notify: Notifier,
+    qualities: dict[str, SymbolQuality] | None = None,
 ) -> None:
     """Run position_manager.manage_position against each open position,
     translate the resulting actions into KIS orders, and clear symbols
@@ -594,6 +633,21 @@ async def _manage_open_positions(
                 )
 
         if state.remaining_qty <= 0:
+            # Record trade outcome for quality tracking before the state
+            # goes out of scope.
+            outcome = TradeOutcome(
+                symbol=symbol,
+                direction=state.signal.direction,
+                entry=float(state.signal.entry),
+                stop=float(state.signal.stop),
+                exit_price=float(_last_exit_price(report, symbol)
+                                  or state.signal.entry),
+                max_favorable=float(state.max_favorable),
+                max_adverse=float(state.max_adverse),
+            )
+            report.trade_outcomes.append(outcome)
+            if qualities is not None:
+                update_quality(qualities, outcome)
             open_positions.pop(symbol, None)
 
 

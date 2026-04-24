@@ -52,6 +52,12 @@ class PositionState:
 
     The original `signal` is immutable; `remaining_qty` + `current_stop`
     + tranche flags evolve as the management function runs.
+
+    `max_favorable` / `max_adverse` track the best/worst price the bar
+    stream has touched while we were open — consumed downstream by
+    `algorithm.signal_quality` to feed MFE/MAE statistics. Both
+    initialise to `signal.entry` so the pre-first-bar state is a
+    no-op (0R in both directions).
     """
     signal: TradeSignal
     initial_qty: int
@@ -60,6 +66,8 @@ class PositionState:
     tp1_done: bool = False
     tp2_done: bool = False
     tp3_done: bool = False
+    max_favorable: float = 0.0
+    max_adverse: float = 0.0
 
     @classmethod
     def from_signal(
@@ -68,6 +76,8 @@ class PositionState:
         return cls(
             signal=signal, initial_qty=int(qty),
             remaining_qty=int(qty), current_stop=float(signal.stop),
+            max_favorable=float(signal.entry),
+            max_adverse=float(signal.entry),
         )
 
 
@@ -152,8 +162,18 @@ def manage_position(
 
     sig = state.signal
     direction = sig.direction
+    hi = float(bar["high"])
+    lo = float(bar["low"])
     close = float(bar["close"])
     t1, t2, t3 = sig.targets[0], sig.targets[1], sig.targets[2]
+
+    # MFE/MAE tracking — updated every bar regardless of outcome.
+    if direction == "bull":
+        state.max_favorable = max(state.max_favorable, hi)
+        state.max_adverse = min(state.max_adverse, lo)
+    else:
+        state.max_favorable = min(state.max_favorable, lo)
+        state.max_adverse = max(state.max_adverse, hi)
 
     # 1) stop-out
     if _hit_stop(direction, bar, state.current_stop):

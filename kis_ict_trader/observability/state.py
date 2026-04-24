@@ -24,11 +24,13 @@ import pandas as pd
 from .. import config as cfg
 from ..algorithm.ict_strategy import TradeSignal
 from ..algorithm.position_manager import PositionState
+from ..algorithm.signal_quality import SymbolQuality
 
 
 log = logging.getLogger(__name__)
 
 PATH_POSITION_STATE: Path = cfg.DIR_STATE / "positions.json"
+PATH_SIGNAL_QUALITY: Path = cfg.DIR_STATE / "signal_quality.json"
 MAX_RECENT_SUBMISSIONS: int = 50
 
 
@@ -99,10 +101,13 @@ def position_state_to_dict(state: PositionState) -> dict:
         "tp1_done": bool(state.tp1_done),
         "tp2_done": bool(state.tp2_done),
         "tp3_done": bool(state.tp3_done),
+        "max_favorable": float(state.max_favorable),
+        "max_adverse": float(state.max_adverse),
     }
 
 
 def position_state_from_dict(d: dict) -> PositionState:
+    entry = float(d["signal"]["entry"])
     return PositionState(
         signal=_signal_from_dict(d["signal"]),
         initial_qty=int(d["initial_qty"]),
@@ -111,6 +116,8 @@ def position_state_from_dict(d: dict) -> PositionState:
         tp1_done=bool(d.get("tp1_done", False)),
         tp2_done=bool(d.get("tp2_done", False)),
         tp3_done=bool(d.get("tp3_done", False)),
+        max_favorable=float(d.get("max_favorable", entry)),
+        max_adverse=float(d.get("max_adverse", entry)),
     )
 
 
@@ -242,3 +249,31 @@ def set_retry_counts(state: dict, counts: dict[str, int]) -> dict:
     out = dict(state)
     out["retry_counts"] = {str(k): int(v) for k, v in counts.items() if v > 0}
     return out
+
+
+# ---------------------------------------------------------------------------
+# Per-symbol signal quality (MFE / MAE / win-rate)
+# ---------------------------------------------------------------------------
+def load_signal_quality(path: Path | None = None) -> dict[str, SymbolQuality]:
+    p = path or PATH_SIGNAL_QUALITY
+    raw = _read_json(p, {})
+    out: dict[str, SymbolQuality] = {}
+    for sym, payload in (raw or {}).items():
+        try:
+            # Tolerate both bare dicts and files written with the derived
+            # win_rate/avg_r fields embedded.
+            out[sym] = SymbolQuality.from_dict(
+                payload if isinstance(payload, dict) else {}
+            )
+        except Exception as e:
+            log.warning("signal_quality[%s] dropped (corrupt): %s", sym, e)
+    return out
+
+
+def save_signal_quality(
+    qualities: dict[str, SymbolQuality], path: Path | None = None,
+) -> Path:
+    p = path or PATH_SIGNAL_QUALITY
+    payload = {sym: q.to_dict() for sym, q in qualities.items()}
+    _atomic_write(p, payload)
+    return p
