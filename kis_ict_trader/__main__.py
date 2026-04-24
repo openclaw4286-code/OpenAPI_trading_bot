@@ -254,6 +254,20 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         help="Render loop_state / positions / quality to an HTML file and "
              "exit. Path defaults to logs/dashboard.html.",
     )
+    mode.add_argument(
+        "--smoke", action="store_true",
+        help="Read-only KIS connectivity check: OAuth / price / daily / "
+             "minute / balance / pending. No orders placed. Exit 0 on "
+             "full pass, 1 on any failure.",
+    )
+    p.add_argument(
+        "--smoke-ticker", default="005930",
+        help="Ticker used for the smoke test price / chart queries.",
+    )
+    p.add_argument(
+        "--smoke-dart", action="store_true",
+        help="Include a DART fundamentals lookup in the smoke test.",
+    )
     p.add_argument(
         "--dry-run", action="store_true",
         help="Force dry-run (no orders submitted). "
@@ -291,6 +305,12 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.dashboard is not None:
         return _cmd_dashboard(args.dashboard or None)
+
+    if args.smoke:
+        from .deploy.smoke_test import run_smoke
+        return asyncio.run(
+            run_smoke(ticker=args.smoke_ticker, with_dart=args.smoke_dart)
+        )
 
     try:
         if args.build_universe:
