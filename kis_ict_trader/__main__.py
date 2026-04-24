@@ -116,6 +116,16 @@ async def _cmd_build_universe() -> int:
     return 0
 
 
+def _cmd_dashboard(path: str | None) -> int:
+    from pathlib import Path
+
+    from .observability.dashboard import write_dashboard
+    out = Path(path) if path else None
+    written = write_dashboard(out)
+    print(f"dashboard written to {written}")
+    return 0
+
+
 def _cmd_list_universe() -> int:
     u = load_daily_universe()
     if not u:
@@ -239,6 +249,11 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         "--list-universe", action="store_true",
         help="Print the persisted daily_universe.json summary.",
     )
+    mode.add_argument(
+        "--dashboard", nargs="?", const="", default=None, metavar="PATH",
+        help="Render loop_state / positions / quality to an HTML file and "
+             "exit. Path defaults to logs/dashboard.html.",
+    )
     p.add_argument(
         "--dry-run", action="store_true",
         help="Force dry-run (no orders submitted). "
@@ -273,6 +288,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.list_universe:
         return _cmd_list_universe()
+
+    if args.dashboard is not None:
+        return _cmd_dashboard(args.dashboard or None)
 
     try:
         if args.build_universe:
