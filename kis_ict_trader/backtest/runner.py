@@ -17,39 +17,66 @@ Scope:
 - Single-entry per symbol at a time; signal emitted while a trade is
   open is ignored.
 
-Fill model:
-- Entry : next bar open (current bar is the signal bar; we can't fill
-         at the close of the same bar without look-ahead).
-- Stop  : if bar.low <= stop within the holding window, fill at stop.
-- Target: if bar.high >= target_level, fill at target_level.
-  If stop and target are both hit on the same bar, assume stop fires
-  first (conservative).
-- Timeout : after `max_hold_bars` bars, close at that bar's close.
+Fill models:
+  * single-exit (default): legacy path, one entry + one exit at the
+    chosen `exit_target_idx` / stop / timeout.
+  * split_exits=True: shares `algorithm.position_manager.manage_position`
+    with live so tranches (50% at TP1 + BE, 50% of remaining at TP2
+    + trail, TP3 flatten, stop flatten) execute against historical
+    bars. The aggregate P&L is the weighted sum across tranches.
 
-Exit target is `signal.targets[exit_target_idx]` (default 1 = TP2,
-matching cfg.ICT.rr_min_default).
+Additional hooks:
+  * llm_approve(signal, ltf) -> bool: when provided, the backtest
+    calls it per signal and skips the entry if it returns False. Use
+    a stub that mimics your LLM gate policy to evaluate how much the
+    gate gives up vs. catches.
+  * per-symbol SymbolQuality records are always populated; the report
+    exposes `quality_by_symbol` for downstream filter tuning.
 """
 from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Sequence
+from typing import Callable, Sequence
 
 import pandas as pd
 
 from .. import config as cfg
 from ..algorithm.ict_strategy import SignalGate, TradeSignal, build_signal
+from ..algorithm.position_manager import (
+    ManagementAction,
+    PositionState,
+    manage_position,
+)
 from ..algorithm.position_sizing import SizingResult, compute_size
+from ..algorithm.signal_quality import (
+    SymbolQuality,
+    TradeOutcome,
+    update_quality,
+)
 from ..signals.ictsignals import evaluate_mtf_entry
 
 
 log = logging.getLogger(__name__)
 
 
+LlmApproveFn = Callable[[TradeSignal, pd.DataFrame], bool]
+
+
 # ---------------------------------------------------------------------------
 # Dataclasses
 # ---------------------------------------------------------------------------
+@dataclass
+class ExitTranche:
+    """One leg of a split exit (TP1 / TP2 / TP3 / stop / timeout)."""
+    ts: pd.Timestamp
+    price: float
+    qty: int
+    reason: str
+    r_multiple: float = 0.0
+
+
 @dataclass
 class BacktestTrade:
     symbol: str
@@ -60,10 +87,13 @@ class BacktestTrade:
     target: float
     qty: int
     exit_ts: pd.Timestamp | None = None
-    exit_price: float | None = None
-    exit_reason: str = ""          # "stop" | "target" | "timeout"
+    exit_price: float | None = None     # weighted average when split
+    exit_reason: str = ""               # final tranche reason
     pnl_cash: float = 0.0
     r_multiple: float = 0.0
+    max_favorable: float = 0.0          # MFE in price terms
+    max_adverse: float = 0.0            # MAE in price terms
+    exit_tranches: list[ExitTranche] = field(default_factory=list)
 
 
 @dataclass
@@ -75,6 +105,8 @@ class BacktestReport:
     end_equity: float
     trades: list[BacktestTrade] = field(default_factory=list)
     equity_curve: pd.Series = field(default_factory=lambda: pd.Series(dtype=float))
+    quality_by_symbol: dict[str, SymbolQuality] = field(default_factory=dict)
+    llm_rejected: int = 0              # count of signals blocked by llm_approve
 
     @property
     def total_return(self) -> float:
@@ -182,6 +214,52 @@ def _check_exit(
 # ---------------------------------------------------------------------------
 # Main runner
 # ---------------------------------------------------------------------------
+def _finalize_trade(trade: BacktestTrade) -> None:
+    """Aggregate tranche exits into pnl_cash / weighted exit_price /
+    overall r_multiple. Single-exit trades are a 1-tranche case."""
+    if not trade.exit_tranches:
+        return
+    sign = 1.0 if trade.direction == "bull" else -1.0
+    risk_per_share = abs(trade.entry_price - trade.stop) or 1e-9
+    total_qty = sum(t.qty for t in trade.exit_tranches)
+    total_cash = 0.0
+    weighted_price = 0.0
+    for t in trade.exit_tranches:
+        per_share = sign * (t.price - trade.entry_price)
+        t.r_multiple = per_share / risk_per_share
+        total_cash += per_share * t.qty
+        weighted_price += t.price * t.qty
+    trade.pnl_cash = total_cash
+    trade.r_multiple = total_cash / (total_qty * risk_per_share) \
+        if total_qty > 0 else 0.0
+    trade.exit_price = weighted_price / total_qty if total_qty > 0 else None
+    trade.exit_ts = trade.exit_tranches[-1].ts
+    trade.exit_reason = trade.exit_tranches[-1].reason
+
+
+def _split_exit_step(
+    trade: BacktestTrade,
+    state: PositionState,
+    bar: pd.Series,
+    ts: pd.Timestamp,
+) -> bool:
+    """Run manage_position for one bar; append any exit tranches to the
+    trade and return True if the position is now flat."""
+    actions = manage_position(state, bar)
+    for act in actions:
+        if act.kind == "close_partial":
+            trade.exit_tranches.append(ExitTranche(
+                ts=ts, price=float(act.price), qty=int(act.qty),
+                reason=act.reason,
+            ))
+        elif act.kind == "close_all":
+            trade.exit_tranches.append(ExitTranche(
+                ts=ts, price=float(act.price), qty=int(act.qty),
+                reason=act.reason,
+            ))
+    return state.remaining_qty <= 0
+
+
 def backtest_symbol(
     symbol: str,
     daily: pd.DataFrame,
@@ -191,12 +269,23 @@ def backtest_symbol(
     max_hold_bars: int = 10,
     exit_target_idx: int = 1,
     warmup_bars: int = 60,
+    split_exits: bool = False,
+    llm_approve: LlmApproveFn | None = None,
 ) -> BacktestReport:
     """Run a single-symbol daily-bar backtest.
 
     `daily` must be OHLCV indexed by a DatetimeIndex, sorted ascending.
     Equity accrues per realized trade; open positions don't mark-to-market
     the equity curve (keeps the curve stepwise and deterministic).
+
+    If `split_exits` is True, exits are driven by
+    `algorithm.position_manager.manage_position` so tranches fire at
+    TP1/TP2/TP3 with BE + structure-style stop lifts in between. The
+    aggregate P&L is the weighted sum across tranches.
+
+    `llm_approve(signal, ltf)` is called per signal before entry; when
+    provided and False, the trade is skipped and counted in
+    `report.llm_rejected`.
     """
     if daily.empty:
         return BacktestReport(
@@ -209,9 +298,33 @@ def backtest_symbol(
     equity = float(start_equity)
     curve: dict[pd.Timestamp, float] = {daily.index[0]: equity}
     trades: list[BacktestTrade] = []
+    qualities: dict[str, SymbolQuality] = {}
     gate = SignalGate()
     open_trade: BacktestTrade | None = None
+    open_state: PositionState | None = None
     bars_held = 0
+    llm_rejected = 0
+
+    def _close_trade(exit_ts: pd.Timestamp) -> None:
+        """Finalize open trade, push into trades list, update quality,
+        advance equity curve. Assumes open_trade/open_state are set."""
+        nonlocal equity
+        _finalize_trade(open_trade)
+        equity += open_trade.pnl_cash
+        curve[exit_ts] = equity
+        if open_state is not None:
+            open_trade.max_favorable = float(open_state.max_favorable)
+            open_trade.max_adverse = float(open_state.max_adverse)
+            outcome = TradeOutcome(
+                symbol=symbol, direction=open_trade.direction,
+                entry=open_trade.entry_price, stop=open_trade.stop,
+                exit_price=float(open_trade.exit_price or open_trade.entry_price),
+                max_favorable=open_trade.max_favorable,
+                max_adverse=open_trade.max_adverse,
+            )
+            update_quality(qualities, outcome,
+                           now_iso=exit_ts.isoformat())
+        trades.append(open_trade)
 
     n = len(daily)
     for i in range(warmup_bars, n):
@@ -221,28 +334,40 @@ def backtest_symbol(
         # --- manage open trade on today's bar -----------------------------
         if open_trade is not None:
             bars_held += 1
-            hit = _check_exit(
-                bar, open_trade.stop, open_trade.target, open_trade.direction,
-            )
-            if hit is None and bars_held >= max_hold_bars:
-                hit = ("timeout", float(bar["close"]))
-            if hit is not None:
-                reason, price = hit
-                open_trade.exit_ts = ts
-                open_trade.exit_price = float(price)
-                open_trade.exit_reason = reason
-                sign = 1.0 if open_trade.direction == "bull" else -1.0
-                per_share = sign * (price - open_trade.entry_price)
-                open_trade.pnl_cash = per_share * open_trade.qty
-                risk_per_share = abs(
-                    open_trade.entry_price - open_trade.stop
-                ) or 1e-9
-                open_trade.r_multiple = per_share / risk_per_share
-                equity += open_trade.pnl_cash
-                curve[ts] = equity
-                trades.append(open_trade)
-                open_trade = None
-                bars_held = 0
+            if split_exits and open_state is not None:
+                flat = _split_exit_step(open_trade, open_state, bar, ts)
+                if not flat and bars_held >= max_hold_bars:
+                    # Force flatten at close on timeout.
+                    open_trade.exit_tranches.append(ExitTranche(
+                        ts=ts, price=float(bar["close"]),
+                        qty=int(open_state.remaining_qty),
+                        reason="timeout",
+                    ))
+                    open_state.remaining_qty = 0
+                    flat = True
+                if flat:
+                    _close_trade(ts)
+                    open_trade, open_state, bars_held = None, None, 0
+            else:
+                hit = _check_exit(
+                    bar, open_trade.stop, open_trade.target,
+                    open_trade.direction,
+                )
+                if hit is None and bars_held >= max_hold_bars:
+                    hit = ("timeout", float(bar["close"]))
+                if hit is not None:
+                    reason, price = hit
+                    open_trade.exit_tranches.append(ExitTranche(
+                        ts=ts, price=float(price),
+                        qty=int(open_trade.qty), reason=reason,
+                    ))
+                    if open_state is not None:
+                        # Keep MFE/MAE updated so metrics reflect the
+                        # held bar before exit.
+                        manage_position(open_state, bar)
+                        open_state.remaining_qty = 0
+                    _close_trade(ts)
+                    open_trade, open_state, bars_held = None, None, 0
 
         # --- look for a new signal on this bar ----------------------------
         if open_trade is not None:
@@ -290,6 +415,17 @@ def backtest_symbol(
             ts=daily.index[i + 1], meta=dict(sig.meta),
         )
 
+        # --- LLM gate hook (pre-sizing; cheap reject) ---------------------
+        if llm_approve is not None:
+            try:
+                if not llm_approve(fill_sig, ltf):
+                    llm_rejected += 1
+                    continue
+            except Exception as e:
+                log.debug("llm_approve raised for %s: %s — skipping", symbol, e)
+                llm_rejected += 1
+                continue
+
         sr: SizingResult = compute_size(
             fill_sig, equity=equity, current_total_exposure=0.0,
             current_symbol_exposure=0.0,
@@ -303,22 +439,21 @@ def backtest_symbol(
             stop=stop_abs, target=target_abs,
             qty=sr.shares,
         )
+        open_state = PositionState.from_signal(fill_sig, qty=sr.shares)
         bars_held = 0
 
     # Flush an open trade at the last bar's close
     if open_trade is not None:
         last_ts = daily.index[-1]
         last_px = float(daily.iloc[-1]["close"])
-        open_trade.exit_ts = last_ts
-        open_trade.exit_price = last_px
-        open_trade.exit_reason = "eod"
-        per_share = last_px - open_trade.entry_price
-        open_trade.pnl_cash = per_share * open_trade.qty
-        risk_per_share = abs(open_trade.entry_price - open_trade.stop) or 1e-9
-        open_trade.r_multiple = per_share / risk_per_share
-        equity += open_trade.pnl_cash
-        curve[last_ts] = equity
-        trades.append(open_trade)
+        open_trade.exit_tranches.append(ExitTranche(
+            ts=last_ts, price=last_px,
+            qty=int(open_state.remaining_qty if open_state else open_trade.qty),
+            reason="eod",
+        ))
+        if open_state is not None:
+            open_state.remaining_qty = 0
+        _close_trade(last_ts)
 
     equity_curve = pd.Series(curve).sort_index()
     # Forward-fill so the curve spans the entire range, not just trade days.
@@ -332,6 +467,8 @@ def backtest_symbol(
         end_equity=float(equity),
         trades=trades,
         equity_curve=equity_curve,
+        quality_by_symbol=qualities,
+        llm_rejected=llm_rejected,
     )
 
 
