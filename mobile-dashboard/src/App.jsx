@@ -6,6 +6,7 @@ import PositionDetail from './screens/PositionDetail.jsx';
 import Signals from './screens/Signals.jsx';
 import Backtest from './screens/Backtest.jsx';
 import Settings from './screens/Settings.jsx';
+import Showcase from './screens/Showcase.jsx';
 
 export default function App() {
   return (
@@ -17,6 +18,10 @@ export default function App() {
         <Route path="/signals" element={<Signals />} />
         <Route path="/backtest" element={<Backtest />} />
         <Route path="/settings" element={<Settings />} />
+        {/* Diagnostic page — renders 908-doha-ui primitives raw so the
+            design-system tokens / typography / spacing can be verified
+            independent of the dashboard composition. */}
+        <Route path="/showcase" element={<Showcase />} />
       </Route>
     </Routes>
   );
