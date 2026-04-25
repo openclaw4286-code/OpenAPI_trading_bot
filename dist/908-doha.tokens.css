@@ -1,0 +1,188 @@
+/* ============================================================
+   908 Doha Design System — Tokens Only
+   v0.9.0 — variables only. No @font-face, no base reset, no classes.
+   Drop into a project that already has fonts + base styles.
+   ============================================================ */
+
+:root {
+  /* --- Color primitives (10-step scales) --- */
+  --grey-50:  #FAF9F6; --grey-100: #F2F0EB; --grey-200: #E5E2DA;
+  --grey-300: #CECABE; --grey-400: #9A9588; --grey-500: #747067;
+  --grey-600: #53504A; --grey-700: #34312D; --grey-800: #1A1815;
+  --grey-900: #0A0907;
+
+  --primary-50:  #E8F1FF; --primary-100: #CCE0FF; --primary-200: #99C1FF;
+  --primary-300: #66A1FF; --primary-400: #3382FF; --primary-500: #0064FF;
+  --primary-600: #0051CC; --primary-700: #003D99; --primary-800: #002966;
+  --primary-900: #001633;
+
+  --red-50: #FDECEA; --red-100: #FBD3CF; --red-200: #F6A7A0;
+  --red-300: #EE7A71; --red-400: #E15347; --red-500: #D23826;
+  --red-600: #AC2B1C; --red-700: #851F14; --red-800: #5E160E;
+  --red-900: #380B07;
+
+  --green-50: #E9F5EC; --green-100: #CEE8D4; --green-200: #9ED2AB;
+  --green-300: #6BB982; --green-400: #3E9F5E; --green-500: #1E8443;
+  --green-600: #166934; --green-700: #0F4E26; --green-800: #09361A;
+  --green-900: #04200F;
+
+  --orange-50: #FBEFE3; --orange-100: #F6DBBC; --orange-200: #EFBB85;
+  --orange-300: #E59A52; --orange-400: #D57B29; --orange-500: #B5610F;
+  --orange-600: #904C0A; --orange-700: #6B3807; --orange-800: #4A2604;
+  --orange-900: #2B1602;
+
+  --yellow-50: #FBF3D6; --yellow-100: #F6E6A7; --yellow-200: #EDD468;
+  --yellow-300: #DCBB2D; --yellow-400: #BE9D12; --yellow-500: #95790A;
+  --yellow-600: #735C06; --yellow-700: #524204; --yellow-800: #332902;
+  --yellow-900: #1B1601;
+
+  --teal-50: #E4F4F4; --teal-100: #BFE4E4; --teal-200: #82C9C9;
+  --teal-300: #48ACAC; --teal-400: #1E8C8C; --teal-500: #0A6E6E;
+  --teal-600: #075757; --teal-700: #054040; --teal-800: #042C2C;
+  --teal-900: #021818;
+
+  --purple-50: #EFEAF5; --purple-100: #DACEE7; --purple-200: #B49ECF;
+  --purple-300: #8D6FB3; --purple-400: #6B4B95; --purple-500: #4F3478;
+  --purple-600: #3E2960; --purple-700: #2E1E48; --purple-800: #1E1330;
+  --purple-900: #0F091B;
+
+  --grey-a-50:  rgba(26, 24, 21, 0.04);
+  --grey-a-100: rgba(26, 24, 21, 0.08);
+  --grey-a-200: rgba(26, 24, 21, 0.12);
+  --grey-a-300: rgba(26, 24, 21, 0.18);
+  --grey-a-400: rgba(26, 24, 21, 0.28);
+  --grey-a-500: rgba(26, 24, 21, 0.40);
+  --grey-a-600: rgba(26, 24, 21, 0.52);
+  --grey-a-700: rgba(26, 24, 21, 0.68);
+  --grey-a-800: rgba(26, 24, 21, 0.82);
+  --grey-a-900: rgba(26, 24, 21, 0.94);
+
+  /* --- Semantic tokens (light) --- */
+  --background:       var(--grey-50);
+  --surface:          #FFFFFF;
+  --surface-layered:  var(--grey-50);
+  --surface-sunken:   var(--grey-100);
+  --surface-inverse:  var(--grey-900);
+
+  --text-primary:     var(--grey-900);
+  --text-secondary:   var(--grey-600);
+  --text-tertiary:    var(--grey-400);
+  --text-inverted:    #FFFFFF;
+  --text-brand:       var(--primary-600);
+  --text-link:        var(--primary-600);
+
+  --border-subtle:    var(--grey-100);
+  --border-default:   var(--grey-200);
+  --border-strong:    var(--grey-300);
+  --border-focus:     var(--primary-500);
+
+  --accent-brand:       var(--primary-500);
+  --accent-brand-hover: var(--primary-600);
+  --accent-brand-press: var(--primary-700);
+  --accent-brand-soft:  var(--primary-50);
+
+  --state-positive:      var(--green-500);
+  --state-positive-soft: var(--green-50);
+  --state-negative:      var(--red-500);
+  --state-negative-soft: var(--red-50);
+  --state-warning:       var(--orange-500);
+  --state-warning-soft:  var(--orange-50);
+  --state-info:          var(--teal-500);
+  --state-info-soft:     var(--teal-50);
+
+  --overlay-dim:   var(--grey-a-500);
+  --overlay-scrim: var(--grey-a-700);
+
+  /* --- Typography --- */
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system, "SF Pro Text",
+               "Helvetica Neue", "Noto Kufi Arabic", system-ui, sans-serif;
+  --font-serif: "Fraunces", "Times New Roman", Georgia, serif;
+  --font-mono: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+  --font-arabic: "Noto Kufi Arabic", "Pretendard Variable", sans-serif;
+
+  --display-size:   40px;  --display-lh:   48px;  --display-ls:  -0.02em;
+  --title1-size:    32px;  --title1-lh:    40px;  --title1-ls:   -0.015em;
+  --title2-size:    26px;  --title2-lh:    34px;  --title2-ls:   -0.012em;
+  --title3-size:    22px;  --title3-lh:    30px;  --title3-ls:   -0.01em;
+  --heading1-size:  18px;  --heading1-lh:  26px;  --heading1-ls: -0.006em;
+  --heading2-size:  16px;  --heading2-lh:  24px;  --heading2-ls: -0.004em;
+  --body1-size:     16px;  --body1-lh:     26px;  --body1-ls:    -0.003em;
+  --body2-size:     14px;  --body2-lh:     22px;  --body2-ls:    -0.002em;
+  --label-size:     13px;  --label-lh:     18px;  --label-ls:     0;
+  --caption-size:   12px;  --caption-lh:   16px;  --caption-ls:   0;
+
+  --fw-light: 300; --fw-regular: 400; --fw-medium: 500;
+  --fw-semibold: 600; --fw-bold: 700;
+
+  /* --- Spacing (4pt) --- */
+  --space-0: 0;   --space-1: 2px;  --space-2: 4px;  --space-3: 8px;
+  --space-4: 12px; --space-5: 16px; --space-6: 20px; --space-7: 24px;
+  --space-8: 32px; --space-9: 40px; --space-10: 48px; --space-11: 64px;
+  --space-12: 80px;
+
+  /* --- Radius --- */
+  --radius-xs: 4px; --radius-sm: 8px; --radius-md: 12px;
+  --radius-lg: 16px; --radius-xl: 20px; --radius-2xl: 28px;
+  --radius-full: 9999px;
+
+  /* --- Elevation --- */
+  --elev-0: none;
+  --elev-1: 0 1px 2px rgba(26, 24, 21, 0.04), 0 1px 1px rgba(26, 24, 21, 0.03);
+  --elev-2: 0 2px 6px rgba(26, 24, 21, 0.06), 0 1px 2px rgba(26, 24, 21, 0.04);
+  --elev-3: 0 8px 20px rgba(26, 24, 21, 0.08), 0 2px 6px rgba(26, 24, 21, 0.05);
+  --elev-4: 0 18px 40px rgba(26, 24, 21, 0.12), 0 4px 12px rgba(26, 24, 21, 0.06);
+
+  /* --- Motion --- */
+  --dur-fast:   160ms;
+  --dur-normal: 280ms;
+  --dur-slow:   480ms;
+  --dur-xslow:  720ms;
+  --ease-out:      cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out:   cubic-bezier(0.76, 0, 0.24, 1);
+  --ease-spring:   cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-soft:     cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-emphasis: cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* --- Dark mode --- */
+:root[data-theme="dark"], .theme-dark {
+  --background:       #0A0A09;
+  --surface:          #141413;
+  --surface-layered:  #1C1C1A;
+  --surface-sunken:   #050504;
+  --surface-inverse:  #F7F6F3;
+
+  --text-primary:     #F7F6F3;
+  --text-secondary:   #A7A49C;
+  --text-tertiary:    #6E6B63;
+  --text-inverted:    var(--grey-900);
+  --text-brand:       #FFFFFF;
+  --text-link:        #FFFFFF;
+
+  --border-subtle:    rgba(242, 240, 235, 0.06);
+  --border-default:   rgba(242, 240, 235, 0.10);
+  --border-strong:    rgba(242, 240, 235, 0.18);
+  --border-focus:     var(--primary-300);
+
+  --accent-brand:       var(--primary-400);
+  --accent-brand-hover: var(--primary-300);
+  --accent-brand-press: var(--primary-200);
+  --accent-brand-soft:  rgba(0, 100, 255, 0.16);
+
+  --state-positive:      var(--green-400);
+  --state-positive-soft: rgba(30, 132, 67, 0.14);
+  --state-negative:      var(--red-400);
+  --state-negative-soft: rgba(210, 56, 38, 0.14);
+  --state-warning:       var(--orange-400);
+  --state-warning-soft:  rgba(181, 97, 15, 0.14);
+  --state-info:          var(--teal-400);
+  --state-info-soft:     rgba(10, 110, 110, 0.14);
+
+  --overlay-dim:   rgba(0, 0, 0, 0.55);
+  --overlay-scrim: rgba(0, 0, 0, 0.75);
+
+  --elev-1: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --elev-2: 0 2px 6px rgba(0, 0, 0, 0.4);
+  --elev-3: 0 8px 20px rgba(0, 0, 0, 0.5);
+  --elev-4: 0 18px 40px rgba(0, 0, 0, 0.55);
+}

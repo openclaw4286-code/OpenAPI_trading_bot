@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ------------------------------------------------------------------
+   Workspace-specific token overrides
+   The DS ships warm-sand neutrals as brand intent; the workspace app
+   wants a plain-white chrome instead, so we override the semantic
+   tokens here. Primitive scales and non-neutral state tokens are
+   inherited from colors_and_type.css unchanged.
+   --surface-glass is the translucent base for liquid-glass surfaces
+   (sticky top bar) — 72% opacity white, designed to sit over scrolling
+   content with blur(20px) + saturate(1.4) per DS motion/transparency
+   rules.
+   ------------------------------------------------------------------ */
+:root {
+  --background:       #FFFFFF;
+  --surface:          #FFFFFF;
+  --surface-layered:  #F7F7F6;
+  --surface-sunken:   #F0F0EF;
+  --surface-glass:    rgba(255, 255, 255, 0.72);
+
+  --border-subtle:    #EEEEEE;
+  --border-default:   #E3E3E2;
+  --border-strong:    #C9C9C6;
+
+  --overlay-dim:      rgba(17, 17, 17, 0.32);
+  --overlay-scrim:    rgba(17, 17, 17, 0.52);
+}
+
+@layer base {
+  html, body, #root { height: 100%; }
+  body { background: var(--background); color: var(--text-primary); }
+}
+
+/* ------------------------------------------------------------------
+   Shared keyframes. Kept global so React-driven re-renders of modal
+   bodies don't re-declare them inline — re-declaration was retriggering
+   the modal slide-up animation on every dropdown change and looking
+   like a refresh flash.
+   ------------------------------------------------------------------ */
+@keyframes dsFade {
+  from { opacity: 0 }
+  to   { opacity: 1 }
+}
+@keyframes dsSlideUp {
+  from { opacity: 0; transform: translateY(12px) }
+  to   { opacity: 1; transform: translateY(0) }
+}
+@keyframes dsSelectFade {
+  from { opacity: 0; transform: translateY(-4px) }
+  to   { opacity: 1; transform: translateY(0) }
+}
+@keyframes dsToastIn {
+  from { opacity: 0; transform: translateY(-20px) }
+  to   { opacity: 1; transform: translateY(0) }
+}
+@keyframes dsToastOut {
+  from { opacity: 1; transform: translateY(0) }
+  to   { opacity: 0; transform: translateY(-12px) }
+}
+@keyframes dsPageIn {
+  from { opacity: 0; transform: translateX(10px) }
+  to   { opacity: 1; transform: translateX(0) }
+}
+@keyframes dsSkeleton {
+  0%   { background-position: 200% 0 }
+  100% { background-position: -200% 0 }
+}
+
+/* ------------------------------------------------------------------
+   iOS Safari auto-zooms into any input whose computed font-size is
+   under 16px on focus. The DS sets inputs at 15px which trips that
+   behavior every time on phones — bump just the rendered font on
+   sub-tablet widths so the zoom doesn't fire. !important is needed
+   because the form primitives set font-size via inline style.
+   ------------------------------------------------------------------ */
+@media (max-width: 767px) {
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+}
