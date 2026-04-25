@@ -1,0 +1,51 @@
+{
+  "name": "908-doha-design-system",
+  "version": "0.9.0",
+  "description": "908 Doha Design System — Gulf-modern UI tokens, typography, and components for calm, premium fintech interfaces.",
+  "keywords": [
+    "design-system",
+    "design-tokens",
+    "css-variables",
+    "908-doha",
+    "mobile-first",
+    "tailwind-preset",
+    "fintech-ui"
+  ],
+  "license": "MIT",
+  "author": "908 Doha",
+  "type": "module",
+  "main": "./dist/908-doha.css",
+  "style": "./dist/908-doha.css",
+  "files": [
+    "dist",
+    "fonts",
+    "assets",
+    "tokens.json",
+    "tailwind.preset.js",
+    "colors_and_type.css",
+    "README.md",
+    "HANDOFF.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "style": "./dist/908-doha.css",
+      "default": "./dist/908-doha.css"
+    },
+    "./tokens-only": "./dist/908-doha.tokens.css",
+    "./full": "./dist/908-doha.css",
+    "./tokens.json": "./tokens.json",
+    "./tailwind": "./tailwind.preset.js",
+    "./fonts/*": "./fonts/*",
+    "./assets/*": "./assets/*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YOUR_ORG/908-doha-design-system.git"
+  },
+  "scripts": {
+    "preview": "npx serve .",
+    "build:tokens": "node ./scripts/build-tokens.mjs"
+  }
+}

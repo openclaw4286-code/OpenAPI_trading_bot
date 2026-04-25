@@ -1,0 +1,7 @@
+{
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "buildCommand": "npm --prefix app ci --no-audit --no-fund && npm --prefix app run build",
+  "outputDirectory": "app/dist",
+  "installCommand": "echo 'root has no deps; build installs in app/'"
+}
