@@ -1,51 +1,39 @@
-// Single-line event-log entry. Kind badge controls color so the eye can
-// scan the column for ENTRY (green) / LLM_REJECT (warning) / etc. without
-// reading the text.
+import { useNavigate } from 'react-router-dom';
+import VaultEntry from '@ds/components/VaultEntry.jsx';
+
+// Event-log row backed by 908-doha-ui's VaultEntry (square accent
+// badge + title + subtitle + hover-only trailing actions). The kind
+// label sits up front in the title so the badge initial reads as the
+// kind letter (E for ENTRY, R for LLM REJECT, etc.). The symbol is in
+// subtitle alongside the detail text. Tap navigates to the related
+// position when there is one.
 
 const KIND_LABEL = {
-  ENTRY:      { text: 'ENTRY',     color: 'var(--state-positive)' },
-  EXIT:       { text: 'EXIT',      color: 'var(--state-info)' },
-  STOP_OUT:   { text: 'STOP-OUT',  color: 'var(--state-negative)' },
-  LLM_REJECT: { text: 'LLM REJECT', color: 'var(--state-warning)' },
-  CHART:      { text: 'CHART',     color: 'var(--text-secondary)' },
-  UNIVERSE:   { text: 'UNIVERSE',  color: 'var(--text-secondary)' },
+  ENTRY:      'ENTRY',
+  EXIT:       'EXIT',
+  STOP_OUT:   'STOP-OUT',
+  LLM_REJECT: 'REJECT',
+  CHART:      'CHART',
+  UNIVERSE:   'UNIVERSE',
 };
 
 export default function EventLogRow({ event }) {
-  const kind = KIND_LABEL[event.kind] ?? {
-    text: event.kind,
-    color: 'var(--text-secondary)',
+  const navigate = useNavigate();
+  const label = KIND_LABEL[event.kind] ?? event.kind;
+  const entry = {
+    title: `${label} · ${event.symbol}`,
+    username: `${event.ts}  ${event.detail}`,
   };
   return (
-    <div className="flex items-center gap-2.5 py-2">
-      <span
-        className="t-caption num-mono w-12 shrink-0"
-        style={{ color: 'var(--text-tertiary)' }}
-      >
-        {event.ts}
-      </span>
-      <span
-        className="t-caption shrink-0"
-        style={{
-          fontWeight: 600,
-          color: kind.color,
-          minWidth: 76,
-        }}
-      >
-        {kind.text}
-      </span>
-      <span
-        className="t-caption num-mono shrink-0"
-        style={{ color: 'var(--text-primary)' }}
-      >
-        {event.symbol}
-      </span>
-      <span
-        className="t-caption truncate"
-        style={{ color: 'var(--text-secondary)' }}
-      >
-        {event.detail}
-      </span>
-    </div>
+    <VaultEntry
+      entry={entry}
+      onOpen={() => {
+        if (event.symbol && event.symbol !== '-') {
+          navigate(`/positions/${event.symbol}`);
+        }
+      }}
+      onCopyPassword={() => {}}
+      onCopyUsername={() => {}}
+    />
   );
 }

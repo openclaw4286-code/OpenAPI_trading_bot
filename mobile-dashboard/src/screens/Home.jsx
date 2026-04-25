@@ -75,14 +75,8 @@ export default function Home() {
           </div>
         </section>
 
-        <section
-          className="rounded-2xl p-4"
-          style={{
-            background: 'var(--surface)',
-            border: '1px solid var(--border-subtle)',
-          }}
-        >
-          <div className="mb-1 flex items-center justify-between">
+        <section className="mt-1">
+          <div className="mb-2 flex items-center justify-between">
             <h3 className="t-heading2" style={{ fontWeight: 600 }}>
               최근 이벤트
             </h3>
@@ -94,7 +88,7 @@ export default function Home() {
               전체 →
             </Link>
           </div>
-          <div className="divide-y" style={{ borderColor: 'var(--border-subtle)' }}>
+          <div className="flex flex-col gap-2">
             {MOCK_RECENT_EVENTS.slice(0, 5).map((ev, i) => (
               <EventLogRow key={i} event={ev} />
             ))}
