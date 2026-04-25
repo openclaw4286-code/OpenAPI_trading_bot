@@ -1,0 +1,33 @@
+@import '../../../908-doha-ui/styles/908-doha.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+  overscroll-behavior-y: contain;
+}
+
+body {
+  background: var(--background);
+}
+
+/* Pulse animation for ERROR status dot */
+@keyframes dsPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.55; transform: scale(0.85); }
+}
+
+/* Mono numerals — applied wherever a number must not jump width */
+.num-mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Hide scrollbars on horizontal scroll strips */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
