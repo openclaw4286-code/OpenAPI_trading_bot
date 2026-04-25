@@ -1,0 +1,83 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{background:var(--surface);margin:0;padding:28px 20px;color:var(--text-primary);font-family:var(--font-sans);}
+  .lbl{font-size:11px;font-weight:600;color:var(--text-secondary);margin:0 0 16px;letter-spacing:0.04em;text-transform:uppercase;}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .cell{border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:14px;height:140px;position:relative;overflow:hidden;}
+  .cap{position:absolute;bottom:10px;left:14px;font-size:11px;font-weight:600;color:var(--text-primary);}
+  .note{position:absolute;bottom:10px;right:14px;font-family:var(--font-mono);font-size:10px;color:var(--text-tertiary);}
+
+  /* ---- Card enter ---- */
+  .card{width:72px;height:54px;background:var(--grey-900);border-radius:var(--radius-sm);
+        position:absolute;top:22px;left:14px;animation:cardin 2800ms var(--ease-soft) infinite;}
+  @keyframes cardin{0%{opacity:0;transform:translateY(12px);}30%{opacity:1;transform:translateY(0);}
+    70%{opacity:1;transform:translateY(0);}100%{opacity:0;transform:translateY(12px);}}
+
+  /* ---- CTA press — shrink + color darkens then rebounds ---- */
+  .btn{width:140px;height:44px;border-radius:var(--radius-md);
+       position:absolute;top:30px;left:14px;
+       display:flex;align-items:center;justify-content:center;color:#fff;
+       font-size:13px;font-weight:600;letter-spacing:-0.01em;
+       background:var(--accent-brand);
+       box-shadow:0 6px 18px rgba(0,100,255,0.28);
+       animation:press 2400ms cubic-bezier(.2,.8,.2,1) infinite;}
+  @keyframes press{
+    0%,100%  {transform:scale(1);    background:var(--accent-brand);     box-shadow:0 6px 18px rgba(0,100,255,.28);}
+    42%      {transform:scale(0.94); background:var(--accent-brand-press);box-shadow:0 2px 6px rgba(0,100,255,.18) inset, 0 1px 2px rgba(0,0,0,.1);}
+    55%      {transform:scale(0.94); background:var(--accent-brand-press);box-shadow:0 2px 6px rgba(0,100,255,.18) inset, 0 1px 2px rgba(0,0,0,.1);}
+    75%      {transform:scale(1.015);background:var(--accent-brand);     box-shadow:0 8px 22px rgba(0,100,255,.32);}
+  }
+  .btn::before{content:"Confirm transfer";}
+
+  /* ---- Number interpolate — pachinko: per-digit wheel ---- */
+  .odo{position:absolute;top:30px;left:14px;display:flex;gap:2px;
+       font-family:var(--font-mono);font-size:30px;font-weight:700;
+       color:var(--text-primary);letter-spacing:-0.02em;line-height:1;}
+  .odo .d{width:18px;height:36px;overflow:hidden;position:relative;
+          background:var(--grey-50);border-radius:4px;
+          box-shadow:inset 0 1px 2px rgba(0,0,0,.06);}
+  .odo .d .strip{position:absolute;top:0;left:0;right:0;display:flex;flex-direction:column;align-items:center;}
+  .odo .d .strip span{display:block;height:36px;line-height:36px;}
+  .odo .sep{width:auto;height:36px;line-height:36px;color:var(--text-tertiary);background:none;box-shadow:none;}
+  /* each digit spins with a different duration so they land out-of-sync — true pachinko */
+  .odo .d1 .strip{animation:spin 2600ms cubic-bezier(.12,.85,.2,1) infinite;}
+  .odo .d2 .strip{animation:spin 2600ms cubic-bezier(.12,.85,.2,1) infinite;animation-delay:120ms;}
+  .odo .d3 .strip{animation:spin 2600ms cubic-bezier(.12,.85,.2,1) infinite;animation-delay:260ms;}
+  .odo .d4 .strip{animation:spin 2600ms cubic-bezier(.12,.85,.2,1) infinite;animation-delay:420ms;}
+  @keyframes spin{
+    0%   {transform:translateY(0);}
+    65%  {transform:translateY(-324px);}     /* fast spin through 9 digits */
+    80%  {transform:translateY(-360px);}     /* overshoot */
+    90%  {transform:translateY(-352px);}     /* settle back */
+    100% {transform:translateY(-360px);}
+  }
+</style></head>
+<body>
+  <div class="lbl">Motion patterns · entrance · press · count</div>
+  <div class="grid">
+    <div class="cell">
+      <div class="card"></div>
+      <div class="cap">Card enter</div>
+      <div class="note">y12 · 320ms · soft</div>
+    </div>
+
+    <div class="cell">
+      <div class="btn"></div>
+      <div class="cap">CTA press</div>
+      <div class="note">scale + tint + inset</div>
+    </div>
+
+    <div class="cell">
+      <div class="odo">
+        <span class="d d1"><span class="strip"><span>3</span><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span></span></span>
+        <span class="d d2"><span class="strip"><span>4</span><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span></span></span>
+        <span class="sep">,</span>
+        <span class="d d3"><span class="strip"><span>4</span><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span></span></span>
+        <span class="d d4"><span class="strip"><span>0</span><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span></span></span>
+      </div>
+      <div class="cap">Number interpolate</div>
+      <div class="note">pachinko · per-digit</div>
+    </div>
+  </div>
+</body></html>

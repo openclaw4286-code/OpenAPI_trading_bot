@@ -1,0 +1,21 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{background:var(--surface);margin:0;padding:20px;color:var(--text-primary);font-family:var(--font-sans);}
+  .row{display:flex;gap:20px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
+  .lbl{font-size:10px;font-weight:600;color:var(--text-secondary);letter-spacing:0.04em;text-transform:uppercase;width:80px;flex-shrink:0;}
+  .sw{width:48px;height:28px;background:var(--grey-300);border-radius:999px;position:relative;cursor:pointer;transition:background .28s var(--ease-soft);}
+  .sw.on{background:var(--accent-brand);}
+  .sw::after{content:"";position:absolute;width:24px;height:24px;background:#fff;border-radius:50%;top:2px;left:2px;transition:transform .48s var(--ease-spring);box-shadow:0 1px 3px rgba(0,0,0,.15);}
+  .sw.on::after{transform:translateX(20px);}
+  .cb{width:22px;height:22px;border-radius:6px;border:1.5px solid var(--border-strong);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:all .28s var(--ease-soft);}
+  .cb.on{background:var(--accent-brand);border-color:var(--accent-brand);}
+  .cb.on::after{content:"";width:10px;height:6px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg) translate(1px,-1px);}
+  .rd{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border-strong);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:all .28s var(--ease-soft);}
+  .rd.on{border-color:var(--accent-brand);border-width:6px;}
+</style></head>
+<body>
+  <div class="row"><span class="lbl">Switch</span><div class="sw on"></div><div class="sw"></div></div>
+  <div class="row"><span class="lbl">Checkbox</span><div class="cb on"></div><div class="cb"></div><span style="font-size:14px;color:var(--text-secondary)">Remember this device</span></div>
+  <div class="row"><span class="lbl">Radio</span><div class="rd on"></div><div class="rd"></div><span style="font-size:14px;color:var(--text-secondary)">Instant transfer</span></div>
+</body></html>

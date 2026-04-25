@@ -1,0 +1,25 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{background:var(--surface);margin:0;padding:20px;color:var(--text-primary);font-family:var(--font-sans);}
+  .card{background:var(--surface);border:1px solid var(--border-subtle);border-radius:var(--radius-xl);overflow:hidden;max-width:460px;}
+  .r{display:flex;align-items:center;padding:14px 18px;gap:14px;border-bottom:1px solid var(--border-subtle);}
+  .r:last-child{border-bottom:0;}
+  .ico{width:36px;height:36px;border-radius:10px;background:var(--primary-50);display:flex;align-items:center;justify-content:center;color:var(--accent-brand);font-size:18px;flex-shrink:0;}
+  .ico.neu{background:var(--grey-100);color:var(--text-secondary);}
+  .main{flex:1;min-width:0;}
+  .title{font-size:15px;font-weight:500;color:var(--text-primary);}
+  .desc{font-size:13px;color:var(--text-tertiary);margin-top:2px;}
+  .trail{font-family:var(--font-mono);font-size:14px;font-weight:500;color:var(--text-primary);}
+  .trail.neg{color:var(--state-negative);}
+  .trail.pos{color:var(--state-positive);}
+  .chev{color:var(--text-tertiary);font-size:18px;}
+</style></head>
+<body>
+  <div class="card">
+    <div class="r"><div class="ico">↑</div><div class="main"><div class="title">Laila Al-Khater</div><div class="desc">Salary · Tue 14 Nov</div></div><div class="trail pos">+8,500.00</div></div>
+    <div class="r"><div class="ico neu">☕</div><div class="main"><div class="title">Flat White Roasters</div><div class="desc">Msheireb · today</div></div><div class="trail neg">−32.00</div></div>
+    <div class="r"><div class="ico neu">⛽</div><div class="main"><div class="title">Woqod Station 41</div><div class="desc">West Bay · today</div></div><div class="trail neg">−180.00</div></div>
+    <div class="r"><div class="ico">→</div><div class="main"><div class="title">Saving pot "Ramadan"</div><div class="desc">Auto-transfer</div></div><div class="chev">›</div></div>
+  </div>
+</body></html>

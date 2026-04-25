@@ -1,0 +1,34 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{background:var(--surface);margin:0;padding:20px;color:var(--text-primary);font-family:var(--font-sans);}
+  .row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center;}
+  .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:var(--radius-full);font-size:12px;font-weight:600;}
+  .solid-brand{background:var(--accent-brand);color:#fff;}
+  .solid-pos{background:var(--state-positive);color:#fff;}
+  .solid-neg{background:var(--state-negative);color:#fff;}
+  .soft-brand{background:var(--accent-brand-soft);color:var(--primary-700);}
+  .soft-pos{background:var(--state-positive-soft);color:var(--green-700);}
+  .soft-neg{background:var(--state-negative-soft);color:var(--red-700);}
+  .soft-warn{background:var(--state-warning-soft);color:var(--orange-700);}
+  .outline{background:transparent;color:var(--text-primary);border:1px solid var(--border-strong);}
+  .dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
+  .lbl{font-size:10px;font-weight:600;color:var(--text-secondary);letter-spacing:0.04em;text-transform:uppercase;width:60px;flex-shrink:0;}
+</style></head>
+<body>
+  <div class="row"><span class="lbl">Solid</span>
+    <span class="badge solid-brand">Brand</span>
+    <span class="badge solid-pos"><span class="dot"></span>Active</span>
+    <span class="badge solid-neg">Overdue</span>
+  </div>
+  <div class="row"><span class="lbl">Soft</span>
+    <span class="badge soft-brand">Saving</span>
+    <span class="badge soft-pos">Confirmed</span>
+    <span class="badge soft-warn">Pending</span>
+    <span class="badge soft-neg">Failed</span>
+  </div>
+  <div class="row"><span class="lbl">Outline</span>
+    <span class="badge outline">Draft</span>
+    <span class="badge outline">Archived</span>
+  </div>
+</body></html>

@@ -1,0 +1,20 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{background:var(--surface);margin:0;padding:20px;color:var(--text-primary);}
+  .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;text-align:center;}
+  .box{aspect-ratio:1;background:var(--primary-100);border:1px solid var(--primary-300);}
+  .n{font-size:10px;font-weight:600;color:var(--text-secondary);margin-top:8px;}
+  .v{font-family:var(--font-mono);font-size:9px;color:var(--text-tertiary);}
+</style></head>
+<body>
+  <div class="grid">
+    <div><div class="box" style="border-radius:var(--radius-xs)"></div><div class="n">xs</div><div class="v">4</div></div>
+    <div><div class="box" style="border-radius:var(--radius-sm)"></div><div class="n">sm</div><div class="v">8</div></div>
+    <div><div class="box" style="border-radius:var(--radius-md)"></div><div class="n">md</div><div class="v">12</div></div>
+    <div><div class="box" style="border-radius:var(--radius-lg)"></div><div class="n">lg</div><div class="v">16</div></div>
+    <div><div class="box" style="border-radius:var(--radius-xl)"></div><div class="n">xl</div><div class="v">20</div></div>
+    <div><div class="box" style="border-radius:var(--radius-2xl)"></div><div class="n">2xl</div><div class="v">28</div></div>
+    <div><div class="box" style="border-radius:var(--radius-full)"></div><div class="n">full</div><div class="v">9999</div></div>
+  </div>
+</body></html>

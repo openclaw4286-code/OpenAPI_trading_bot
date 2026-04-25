@@ -1,0 +1,18 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{background:var(--grey-50);margin:0;padding:20px;color:var(--text-primary);font-family:var(--font-sans);}
+  .col{display:flex;flex-direction:column;gap:14px;max-width:420px;}
+  .toast{background:var(--grey-900);color:#fff;border-radius:var(--radius-md);padding:14px 16px;display:flex;gap:12px;align-items:center;font-size:14px;box-shadow:var(--elev-3);}
+  .toast .ic{width:20px;height:20px;border-radius:50%;background:var(--state-positive);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;flex-shrink:0;}
+  .bubble{background:var(--grey-900);color:#fff;border-radius:var(--radius-md);padding:10px 14px;font-size:13px;max-width:260px;position:relative;}
+  .bubble::after{content:"";position:absolute;top:-6px;left:32px;width:12px;height:12px;background:var(--grey-900);transform:rotate(45deg);}
+  .tip{background:var(--primary-600);color:#fff;border-radius:var(--radius-sm);padding:8px 12px;font-size:12px;display:inline-block;font-weight:500;}
+</style></head>
+<body>
+  <div class="col">
+    <div class="toast"><div class="ic">✓</div><div>Sent. 500 QAR is on its way to Laila.</div></div>
+    <div class="bubble">Tap here to split by category.</div>
+    <div><span class="tip">QR valid 58s</span></div>
+  </div>
+</body></html>

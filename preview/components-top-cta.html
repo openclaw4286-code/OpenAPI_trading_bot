@@ -1,0 +1,24 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{background:var(--grey-50);margin:0;padding:20px;color:var(--text-primary);font-family:var(--font-sans);}
+  .row{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;}
+  /* Top bar */
+  .top{width:300px;background:var(--surface);border-radius:var(--radius-md);box-shadow:var(--elev-1);padding:14px 16px;display:flex;align-items:center;gap:12px;}
+  .top .bk{font-size:20px;color:var(--text-primary);}
+  .top .title{flex:1;font-size:16px;font-weight:600;}
+  .top .act{color:var(--accent-brand);font-size:14px;font-weight:600;}
+  /* Bottom CTA */
+  .bcta{width:300px;background:var(--surface);border-radius:var(--radius-md);box-shadow:var(--elev-2);padding:14px 16px;}
+  .bcta .btn{background:var(--accent-brand);color:#fff;padding:14px;border-radius:var(--radius-md);font-weight:600;font-size:15px;text-align:center;}
+  .bcta.double{display:flex;gap:8px;}
+  .bcta.double .btn{flex:1;}
+  .bcta.double .alt{background:var(--grey-100);color:var(--text-primary);}
+</style></head>
+<body>
+  <div class="row">
+    <div class="top"><div class="bk">‹</div><div class="title">Transfer confirm</div><div class="act">Save</div></div>
+    <div class="bcta"><div class="btn">Confirm transfer</div></div>
+    <div class="bcta double"><div class="btn alt">Skip</div><div class="btn">Continue</div></div>
+  </div>
+</body></html>

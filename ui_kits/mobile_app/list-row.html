@@ -1,0 +1,174 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>908 · ListRow</title>
+  <link rel="stylesheet" href="../../colors_and_type.css">
+  <style>
+    html, body { margin: 0; background: var(--grey-100); font-family: var(--font-sans); color: var(--text-primary); }
+    .page { max-width: 440px; margin: 0 auto; padding: 24px 0 60px; }
+    h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; margin: 0 20px 4px; }
+    p.lead { font-size: 13px; color: var(--text-secondary); margin: 0 20px 20px; line-height: 20px; }
+    h2 { font-size: 11px; font-weight: 600; color: var(--text-secondary); letter-spacing: 0.05em;
+         text-transform: uppercase; margin: 28px 20px 8px; }
+    .card { background: var(--surface); border-radius: 0; overflow: hidden; }
+    @media (min-width: 440px) { .card { border-radius: var(--radius-lg); margin: 0 20px; } .page { padding: 24px 0 60px; } h2, h1, p.lead { margin-left: 0; margin-right: 0; } }
+  </style>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel" src="./ListRow.jsx"></script>
+  <script type="text/babel">
+    const { useState } = React;
+
+    /* Tiny inline icon renderers — pass as `icon` prop. */
+    const Ico = (d, sw = 1.75) => ({ size = 20 }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">{d}</svg>
+    );
+    const ICO = {
+      plus:    Ico(<><path d="M12 5v14M5 12h14"/></>),
+      crown:   Ico(<><path d="M3 8l4 8h10l4-8-5 3-4-6-4 6-5-3z"/></>),
+      bolt:    Ico(<path d="M13 2L3 14h7l-1 8L20 10h-7l0-8z"/>, 1.6),
+      card:    Ico(<><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></>),
+      bell:    Ico(<><path d="M18 16v-5a6 6 0 1 0-12 0v5l-2 2h16l-2-2z"/><path d="M10 20a2 2 0 0 0 4 0"/></>),
+      gift:    Ico(<><rect x="3" y="8" width="18" height="12" rx="1"/><path d="M3 12h18M12 8v12M12 8c-2 0-4-1-4-3s2-3 4 0c2-3 4-2 4 0s-2 3-4 3z"/></>),
+      shield:  Ico(<path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6l8-3z"/>),
+      arrowUp: Ico(<><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></>),
+      more:    Ico(<><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></>),
+      trash:   Ico(<><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14"/></>),
+    };
+
+    /* A simple Switch for ListRow right demo. */
+    const Switch = () => {
+      const [on, setOn] = useState(true);
+      return (
+        <div onClick={() => setOn(!on)} style={{
+          width: 48, height: 28, background: on ? "var(--accent-brand)" : "var(--grey-300)",
+          borderRadius: 999, position: "relative", cursor: "pointer",
+          transition: "background .28s var(--ease-soft)"
+        }}>
+          <div style={{ position: "absolute", width: 24, height: 24, background: "#fff",
+            borderRadius: "50%", top: 2, left: 2, boxShadow: "0 1px 3px rgba(0,0,0,.15)",
+            transform: on ? "translateX(20px)" : "translateX(0)",
+            transition: "transform .48s var(--ease-spring)" }} />
+        </div>
+      );
+    };
+
+    const Badge = ({ children, tone = "soft" }) => {
+      const styles = {
+        soft: { background: "var(--accent-brand-soft)", color: "var(--accent-brand)" },
+        solid: { background: "var(--accent-brand)", color: "#fff" },
+      };
+      return <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 8px", borderRadius: 999, ...styles[tone] }}>{children}</span>;
+    };
+
+    function Demo() {
+      return (
+        <div className="page">
+          <h1>ListRow</h1>
+          <p className="lead">Three slots — <b>left</b>, <b>contents</b>, <b>right</b> — plus optional trailing arrow. Benchmarked from Toss Design System, rebuilt on 908 Blue with soft motion.</p>
+
+          <h2>Asset icons — shapes</h2>
+          <div className="card">
+            <List dividers>
+              <ListRow onClick={()=>{}}
+                left={<ListRow.AssetIcon icon={ICO.crown} shape="squircle" />}
+                contents={<ListRow.Texts type="2RowTypeA" top="Squircle" bottom="default" />} />
+              <ListRow onClick={()=>{}}
+                left={<ListRow.AssetIcon icon={ICO.bolt} shape="squircle" variant="fill" />}
+                contents={<ListRow.Texts type="2RowTypeA" top="Squircle" bottom="variant=fill" />} />
+              <ListRow onClick={()=>{}}
+                left={<ListRow.AssetIcon icon={ICO.card} shape="card" />}
+                contents={<ListRow.Texts type="2RowTypeA" top="Card" bottom="medium" />} />
+              <ListRow onClick={()=>{}}
+                left={<ListRow.AssetIcon icon={ICO.shield} shape="circle-background" />}
+                contents={<ListRow.Texts type="2RowTypeA" top="Circle" bottom="40 × 40" />} />
+              <ListRow onClick={()=>{}}
+                left={<ListRow.AssetIcon icon={ICO.gift} shape="original" />}
+                contents={<ListRow.Texts type="2RowTypeA" top="Original" bottom="no frame" />} />
+            </List>
+          </div>
+
+          <h2>Asset text — pill on the left</h2>
+          <div className="card">
+            <List dividers>
+              <ListRow
+                left={<ListRow.AssetText shape="squircle" size="xsmall">오늘</ListRow.AssetText>}
+                contents={<ListRow.Texts type="2RowTypeA" top="Daily spending" bottom="QAR 218.40" />}
+                right={<ListRow.Texts type="Right1RowTypeE" top="11:04" />} />
+              <ListRow
+                left={<ListRow.AssetText shape="card" size="small" color="#fff" backgroundColor="var(--accent-brand)">NEW</ListRow.AssetText>}
+                contents={<ListRow.Texts type="2RowTypeA" top="Instant FX" bottom="0% fee until Ramadan" />}
+                withArrow />
+              <ListRow
+                left={<ListRow.AssetText shape="squircle" size="medium">08</ListRow.AssetText>}
+                contents={<ListRow.Texts type="2RowTypeC" top="908 Doha" bottom="Sep 08 · 19:08 reminder" />} />
+            </List>
+          </div>
+
+          <h2>Contents — Texts types</h2>
+          <div className="card">
+            <List dividers>
+              <ListRow contents={<ListRow.Texts type="1RowTypeC" top="1RowTypeC — section title" />} />
+              <ListRow contents={<ListRow.Texts type="2RowTypeA" top="2RowTypeA — primary" bottom="supporting text" />} />
+              <ListRow contents={<ListRow.Texts type="2RowTypeD" top="Balance" bottom="12,450.00 QAR" />} />
+              <ListRow contents={<ListRow.Texts type="3RowTypeC" top="3RowTypeC" middle="subtitle" bottom="tertiary line" />} />
+            </List>
+          </div>
+
+          <h2>Right-area combinations</h2>
+          <div className="card">
+            <List dividers>
+              <ListRow
+                left={<ListRow.AssetIcon icon={ICO.bell} shape="squircle" />}
+                contents={<ListRow.Texts type="1RowTypeA" top="Push notifications" />}
+                right={<Switch />} />
+              <ListRow
+                left={<ListRow.AssetIcon icon={ICO.card} shape="squircle" variant="fill" />}
+                contents={<ListRow.Texts type="2RowTypeA" top="Salary" bottom="From Aramco Services" />}
+                right={<ListRow.Texts type="Right2RowTypeD" top="+8,200.00" bottom="Yesterday" />} />
+              <ListRow
+                left={<ListRow.AssetIcon icon={ICO.shield} shape="squircle" />}
+                contents={<ListRow.Texts type="1RowTypeA" top="Two-factor auth" />}
+                right={<Badge>On</Badge>}
+                withArrow onClick={()=>{}} />
+              <ListRow
+                left={<ListRow.AssetIcon icon={ICO.more} shape="squircle" />}
+                contents={<ListRow.Texts type="1RowTypeA" top="Quick action" />}
+                right={<ListRow.IconButton icon={ICO.arrowUp} variant="fill" label="Move up" />} />
+              <ListRow
+                contents={<ListRow.Texts type="1RowTypeA" top="About 908 Doha" />}
+                withArrow onClick={()=>{}} />
+            </List>
+          </div>
+
+          <h2>Real-world — transactions</h2>
+          <div className="card">
+            <List dividers>
+              <ListRow onClick={()=>{}}
+                left={<ListRow.AssetIcon icon={ICO.card} shape="squircle" />}
+                contents={<ListRow.Texts type="2RowTypeA" top="Carrefour City Center" bottom="Groceries · 08:42" />}
+                right={<ListRow.Texts type="Right2RowTypeA" top="−124.50" bottom="QAR" />} />
+              <ListRow onClick={()=>{}}
+                left={<ListRow.AssetIcon icon={ICO.gift} shape="squircle" variant="fill" />}
+                contents={<ListRow.Texts type="2RowTypeA" top="908 cashback" bottom="Weekly bonus" />}
+                right={<ListRow.Texts type="Right2RowTypeD" top="+12.00" bottom="QAR" />} />
+              <ListRow onClick={()=>{}}
+                left={<ListRow.AssetIcon icon={ICO.bolt} shape="squircle" />}
+                contents={<ListRow.Texts type="2RowTypeA" top="Kahramaa utilities" bottom="Autopay · Oct 4" />}
+                right={<ListRow.Texts type="Right2RowTypeA" top="−312.00" bottom="QAR" />} />
+            </List>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<Demo />);
+  </script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{background:var(--grey-50);margin:0;padding:20px;color:var(--text-primary);font-family:var(--font-sans);}
+  .row{display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;}
+  /* Modal / dialog */
+  .dialog{background:var(--surface);border-radius:var(--radius-xl);padding:20px;max-width:300px;box-shadow:var(--elev-4);}
+  .dialog h3{font-size:17px;font-weight:600;margin:0 0 6px;}
+  .dialog p{font-size:14px;color:var(--text-secondary);margin:0 0 16px;line-height:20px;}
+  .dlg-actions{display:flex;gap:8px;}
+  .dlg-actions button{flex:1;padding:12px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;border:0;cursor:pointer;font-family:inherit;}
+  .dlg-cancel{background:var(--grey-100);color:var(--text-primary);}
+  .dlg-ok{background:var(--state-negative);color:#fff;}
+  /* Bottom sheet */
+  .sheet{width:280px;background:var(--surface);border-radius:var(--radius-2xl) var(--radius-2xl) 0 0;padding:8px 20px 20px;box-shadow:var(--elev-4);}
+  .handle{width:36px;height:4px;background:var(--grey-300);border-radius:999px;margin:4px auto 12px;}
+  .sheet h3{font-size:18px;font-weight:600;margin:0 0 4px;}
+  .sheet p{font-size:14px;color:var(--text-secondary);margin:0 0 16px;}
+  .sheet .btn{background:var(--accent-brand);color:#fff;padding:12px;border-radius:var(--radius-md);text-align:center;font-weight:600;font-size:14px;}
+</style></head>
+<body>
+  <div class="row">
+    <div class="dialog">
+      <h3>Cancel this transfer?</h3>
+      <p>The 500 QAR will return to your account. This can't be undone.</p>
+      <div class="dlg-actions"><button class="dlg-cancel">Keep</button><button class="dlg-ok">Cancel it</button></div>
+    </div>
+    <div class="sheet">
+      <div class="handle"></div>
+      <h3>Add a new card</h3>
+      <p>Your card is stored with bank-grade encryption.</p>
+      <div class="btn">Scan card</div>
+    </div>
+  </div>
+</body></html>

@@ -1,0 +1,27 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{background:var(--surface);margin:0;padding:20px;color:var(--text-primary);font-family:var(--font-sans);}
+  .lbl{font-size:11px;font-weight:600;color:var(--text-secondary);margin:0 0 10px;letter-spacing:0.04em;text-transform:uppercase;}
+  .row{display:flex;align-items:center;gap:16px;padding:10px 0;border-bottom:1px solid var(--border-subtle);}
+  .row:last-child{border:0;}
+  .name{min-width:78px;font-size:12px;font-weight:600;color:var(--text-primary);}
+  .track{flex:1;height:4px;background:var(--grey-100);border-radius:999px;position:relative;overflow:hidden;}
+  .fill{position:absolute;left:0;top:0;height:100%;background:var(--grey-900);border-radius:999px;}
+  .r1 .fill{animation:fast 1600ms var(--ease-soft) infinite;}
+  .r2 .fill{animation:norm 2400ms var(--ease-soft) infinite;}
+  .r3 .fill{animation:slow 3200ms var(--ease-soft) infinite;}
+  .r4 .fill{animation:xslow 4400ms var(--ease-soft) infinite;}
+  @keyframes fast{0%{width:0;}40%{width:100%;}60%{width:100%;}100%{width:0;}}
+  @keyframes norm{0%{width:0;}40%{width:100%;}60%{width:100%;}100%{width:0;}}
+  @keyframes slow{0%{width:0;}40%{width:100%;}60%{width:100%;}100%{width:0;}}
+  @keyframes xslow{0%{width:0;}40%{width:100%;}60%{width:100%;}100%{width:0;}}
+  .meta{font-family:var(--font-mono);font-size:11px;color:var(--text-tertiary);min-width:60px;text-align:right;}
+</style></head>
+<body>
+  <div class="lbl">Motion · Durations</div>
+  <div class="row r1"><div class="name">fast</div><div class="track"><div class="fill"></div></div><div class="meta">160ms</div></div>
+  <div class="row r2"><div class="name">normal</div><div class="track"><div class="fill"></div></div><div class="meta">280ms</div></div>
+  <div class="row r3"><div class="name">slow</div><div class="track"><div class="fill"></div></div><div class="meta">480ms</div></div>
+  <div class="row r4"><div class="name">xslow</div><div class="track"><div class="fill"></div></div><div class="meta">720ms</div></div>
+</body></html>

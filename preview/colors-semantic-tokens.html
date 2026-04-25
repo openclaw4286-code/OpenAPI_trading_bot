@@ -1,0 +1,28 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{background:var(--surface);margin:0;padding:20px;font-family:var(--font-sans);}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+  .cell{border-radius:var(--radius-md);padding:14px;border:1px solid var(--border-subtle);}
+  .dot{width:20px;height:20px;border-radius:50%;margin-bottom:8px;border:1px solid var(--border-subtle);}
+  .n{font-size:11px;color:var(--text-primary);font-weight:600;}
+  .h{font-family:var(--font-mono);font-size:10px;color:var(--text-tertiary);margin-top:2px;}
+  .lbl{font-size:11px;font-weight:600;color:var(--text-secondary);margin:0 0 10px;letter-spacing:0.04em;text-transform:uppercase;}
+</style></head>
+<body>
+  <div class="lbl">Semantic tokens · Light</div>
+  <div class="grid">
+    <div class="cell"><div class="dot" style="background:var(--background)"></div><div class="n">background</div><div class="h">grey-50</div></div>
+    <div class="cell"><div class="dot" style="background:var(--surface)"></div><div class="n">surface</div><div class="h">#FFFFFF</div></div>
+    <div class="cell"><div class="dot" style="background:var(--surface-layered)"></div><div class="n">surface.layered</div><div class="h">grey-50</div></div>
+    <div class="cell"><div class="dot" style="background:var(--accent-brand)"></div><div class="n">accent.brand</div><div class="h">primary-500</div></div>
+    <div class="cell"><div class="dot" style="background:var(--text-primary)"></div><div class="n">text.primary</div><div class="h">grey-900</div></div>
+    <div class="cell"><div class="dot" style="background:var(--text-secondary)"></div><div class="n">text.secondary</div><div class="h">grey-600</div></div>
+    <div class="cell"><div class="dot" style="background:var(--text-tertiary)"></div><div class="n">text.tertiary</div><div class="h">grey-400</div></div>
+    <div class="cell"><div class="dot" style="background:var(--border-default)"></div><div class="n">border.default</div><div class="h">grey-200</div></div>
+    <div class="cell"><div class="dot" style="background:var(--state-positive)"></div><div class="n">state.positive</div><div class="h">green-500</div></div>
+    <div class="cell"><div class="dot" style="background:var(--state-negative)"></div><div class="n">state.negative</div><div class="h">red-500</div></div>
+    <div class="cell"><div class="dot" style="background:var(--state-warning)"></div><div class="n">state.warning</div><div class="h">orange-500</div></div>
+    <div class="cell"><div class="dot" style="background:var(--state-info)"></div><div class="n">state.info</div><div class="h">teal-500</div></div>
+  </div>
+</body></html>

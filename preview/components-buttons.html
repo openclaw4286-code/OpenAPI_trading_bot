@@ -1,0 +1,27 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{background:var(--surface);margin:0;padding:20px;color:var(--text-primary);font-family:var(--font-sans);}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;}
+  button{font-family:inherit;font-weight:600;border:0;cursor:pointer;transition:all var(--dur-fast) var(--ease-soft);letter-spacing:-0.003em;}
+  .btn-primary{background:var(--accent-brand);color:#fff;padding:14px 22px;border-radius:var(--radius-md);font-size:15px;}
+  .btn-primary:hover{background:var(--accent-brand-hover);}
+  .btn-primary:active{transform:scale(0.97);}
+  .btn-secondary{background:var(--grey-100);color:var(--text-primary);padding:14px 22px;border-radius:var(--radius-md);font-size:15px;}
+  .btn-secondary:hover{background:var(--grey-200);}
+  .btn-tertiary{background:transparent;color:var(--accent-brand);padding:14px 22px;border-radius:var(--radius-md);font-size:15px;border:1px solid var(--border-default);}
+  .btn-disabled{background:var(--grey-100);color:var(--text-tertiary);padding:14px 22px;border-radius:var(--radius-md);font-size:15px;cursor:not-allowed;}
+  .lbl{font-size:11px;font-weight:600;color:var(--text-secondary);letter-spacing:0.04em;text-transform:uppercase;min-width:88px;}
+</style></head>
+<body>
+  <div class="row"><span class="lbl">Primary</span>
+    <button class="btn-primary">Confirm transfer</button>
+    <button class="btn-primary" style="padding:10px 16px;font-size:13px">Medium</button>
+    <button class="btn-primary" style="padding:8px 12px;font-size:12px">Small</button>
+  </div>
+  <div class="row"><span class="lbl">Secondary</span>
+    <button class="btn-secondary">Save draft</button>
+    <button class="btn-tertiary">Learn more</button>
+    <button class="btn-disabled" disabled>Disabled</button>
+  </div>
+</body></html>

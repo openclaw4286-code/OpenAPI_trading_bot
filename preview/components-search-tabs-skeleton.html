@@ -1,0 +1,34 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{background:var(--surface);margin:0;padding:20px;color:var(--text-primary);font-family:var(--font-sans);}
+  .col{display:flex;flex-direction:column;gap:12px;max-width:460px;}
+  /* Search field */
+  .search{display:flex;align-items:center;gap:10px;background:var(--grey-100);border-radius:var(--radius-full);padding:10px 16px;}
+  .search input{flex:1;background:transparent;border:0;outline:0;font-size:15px;font-family:inherit;color:var(--text-primary);}
+  .search input::placeholder{color:var(--text-tertiary);}
+  .search .ic{color:var(--text-tertiary);}
+  /* Tabs underline */
+  .tabs{display:flex;gap:24px;border-bottom:1px solid var(--border-subtle);}
+  .tab{padding:12px 0;font-size:14px;font-weight:500;color:var(--text-tertiary);position:relative;cursor:pointer;}
+  .tab.on{color:var(--text-primary);font-weight:600;}
+  .tab.on::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--text-primary);border-radius:1px;}
+  /* Skeleton */
+  .sk{display:flex;gap:12px;align-items:center;padding:8px 0;}
+  .sk .circle{width:40px;height:40px;border-radius:50%;background:linear-gradient(90deg,var(--grey-100),var(--grey-200),var(--grey-100));background-size:200% 100%;animation:shimmer 1.5s infinite;}
+  .sk .bar{height:12px;border-radius:6px;background:linear-gradient(90deg,var(--grey-100),var(--grey-200),var(--grey-100));background-size:200% 100%;animation:shimmer 1.5s infinite;}
+  @keyframes shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+</style></head>
+<body>
+  <div class="col">
+    <div class="search">
+      <span class="ic">⌕</span>
+      <input placeholder="Search a merchant or person">
+    </div>
+    <div class="tabs"><div class="tab on">All</div><div class="tab">Inbound</div><div class="tab">Outbound</div><div class="tab">Pending</div></div>
+    <div class="sk">
+      <div class="circle"></div>
+      <div style="flex:1;"><div class="bar" style="width:60%;margin-bottom:8px;"></div><div class="bar" style="width:40%;"></div></div>
+    </div>
+  </div>
+</body></html>

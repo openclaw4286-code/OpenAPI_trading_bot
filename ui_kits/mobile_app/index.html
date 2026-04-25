@@ -1,0 +1,170 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>908 Doha · Mobile UI Kit</title>
+  <link rel="stylesheet" href="../../colors_and_type.css">
+  <style>
+    html, body { margin: 0; background: var(--grey-100); min-height: 100vh; }
+    .stage { padding: 40px 20px; display: flex; gap: 24px; align-items: flex-start;
+             justify-content: center; flex-wrap: wrap; }
+    .side { max-width: 320px; padding-top: 20px; }
+    .side h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.015em;
+               margin: 0 0 8px; color: var(--text-primary); }
+    .side p { font-size: 14px; color: var(--text-secondary); line-height: 22px; margin: 0 0 16px; }
+    .side .mini { display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 999px;
+            background: var(--surface); color: var(--text-secondary);
+            border: 1px solid var(--border-subtle); }
+    .theme-toggle { margin-top: 16px; background: var(--surface); border: 1px solid var(--border-subtle);
+                    padding: 10px 14px; border-radius: 12px; font-size: 13px; cursor: pointer;
+                    font-family: inherit; color: var(--text-primary); }
+  </style>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel" src="./components.jsx"></script>
+  <script type="text/babel" src="./screens.jsx"></script>
+  <script type="text/babel">
+    const { useState } = React;
+
+    function BottomNav({ tab, onTab }) {
+      const items = [
+        { id: "home", ico: "home", label: "Home" },
+        { id: "send", ico: "send", label: "Send" },
+        { id: "cards", ico: "wallet", label: "Cards" },
+        { id: "me", ico: "user", label: "Me" },
+      ];
+      return (
+        <div style={{
+          display: "flex", borderTop: "1px solid var(--border-subtle)",
+          background: "var(--surface)", paddingBottom: 8, flexShrink: 0
+        }}>
+          {items.map(it => (
+            <button key={it.id} onClick={() => onTab(it.id)} style={{
+              flex: 1, background: "transparent", border: 0, padding: "10px 6px 6px",
+              cursor: "pointer", fontFamily: "inherit",
+              color: tab === it.id ? "var(--text-primary)" : "var(--text-tertiary)"
+            }}>
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}>
+                <Icon name={it.ico} size={22} strokeWidth={tab === it.id ? 2.25 : 1.75} />
+              </div>
+              <div style={{ fontSize: 10, fontWeight: tab === it.id ? 600 : 500 }}>{it.label}</div>
+            </button>
+          ))}
+        </div>
+      );
+    }
+
+    function App() {
+      const [screen, setScreen] = useState("home");
+      const [tab, setTab] = useState("home");
+      const [dark, setDark] = useState(false);
+      const [sheet, setSheet] = useState(null);
+      const [balance, setBalance] = useState(12450.00);
+      const [lastAmount, setLastAmount] = useState(0);
+      const [transfersDone, setTransfersDone] = useState(0);
+      const [toast, setToast] = useState(null);
+
+      React.useEffect(() => {
+        document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+      }, [dark]);
+
+      const showToast = (msg) => {
+        setToast(msg);
+        setTimeout(() => setToast(null), 3000);
+      };
+
+      const onTabChange = (t) => {
+        setTab(t);
+        if (t === "send") setScreen("send");
+        else if (t === "me") setScreen("settings");
+        else setScreen("home");
+      };
+
+      return (
+        <div className="stage">
+          <div className="side">
+            <h1>908 Doha · Mobile</h1>
+            <p>Interactive reference build on the 908 Design System. Try sending money, toggling dark mode, or opening the "Add card" sheet.</p>
+            <div className="mini">
+              <span className="chip">Pretendard</span>
+              <span className="chip">908 Blue #0064FF</span>
+              <span className="chip">ease-soft</span>
+            </div>
+            <button className="theme-toggle" onClick={() => setDark(d => !d)}>
+              {dark ? "☾ Dark" : "☀ Light"} — click to toggle
+            </button>
+          </div>
+
+          <Phone>
+            {screen === "home" && (
+              <HomeScreen
+                balance={balance}
+                onSend={() => { setScreen("send"); setTab("send"); }}
+                onAccount={() => showToast("Account detail coming soon")}
+                onAddCard={() => setSheet("addcard")}
+                transfersDone={transfersDone}
+              />
+            )}
+            {screen === "send" && (
+              <SendScreen
+                onBack={() => { setScreen("home"); setTab("home"); }}
+                onConfirm={(amt) => {
+                  setLastAmount(amt);
+                  setBalance(b => b - amt);
+                  setTransfersDone(n => n + 1);
+                  setScreen("result");
+                }}
+              />
+            )}
+            {screen === "result" && (
+              <ResultScreen
+                amount={lastAmount}
+                onDone={() => { setScreen("home"); setTab("home"); }}
+              />
+            )}
+            {screen === "settings" && (
+              <SettingsScreen
+                onBack={() => { setScreen("home"); setTab("home"); }}
+                dark={dark} onDark={setDark}
+              />
+            )}
+
+            {/* Toast */}
+            {toast && (
+              <div style={{
+                position: "absolute", top: 60, left: 20, right: 20,
+                background: "var(--grey-900)", color: "#fff",
+                borderRadius: "var(--radius-md)", padding: "12px 16px",
+                fontSize: 14, boxShadow: "var(--elev-3)", zIndex: 30,
+                animation: "fade .25s var(--ease-out)"
+              }}>{toast}</div>
+            )}
+
+            {/* Sheets */}
+            {sheet === "addcard" && (
+              <AddCardSheet
+                onClose={() => setSheet(null)}
+                onAdd={() => { setSheet(null); showToast("Card added."); }}
+              />
+            )}
+
+            {/* Bottom nav (only on home-based screens) */}
+            {(screen === "home" || screen === "settings") && (
+              <BottomNav tab={tab} onTab={onTabChange} />
+            )}
+          </Phone>
+
+          <style>{`@keyframes fade{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}`}</style>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>

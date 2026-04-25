@@ -1,0 +1,25 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{background:var(--surface);margin:0;padding:20px;color:var(--text-primary);font-family:var(--font-sans);}
+  .field{margin-bottom:14px;max-width:420px;}
+  .lbl{font-size:12px;font-weight:500;color:var(--text-secondary);margin-bottom:6px;display:block;}
+  .inp{width:100%;background:var(--surface);border:1px solid var(--border-default);border-radius:var(--radius-md);padding:14px 16px;font-size:16px;font-family:inherit;color:var(--text-primary);outline:none;transition:border-color .15s;}
+  .inp:focus{border-color:var(--border-focus);box-shadow:0 0 0 3px var(--accent-brand-soft);}
+  .inp.err{border-color:var(--state-negative);}
+  .helper{font-size:12px;color:var(--text-tertiary);margin-top:6px;}
+  .helper.err{color:var(--state-negative);}
+  .inp::placeholder{color:var(--text-tertiary);}
+</style></head>
+<body>
+  <div class="field">
+    <label class="lbl">Recipient account</label>
+    <input class="inp" placeholder="QA91 DOHB 0908 0000 ••••">
+    <div class="helper">Paste an IBAN or scan a QR.</div>
+  </div>
+  <div class="field">
+    <label class="lbl">Amount (QAR)</label>
+    <input class="inp err" value="5,000,000">
+    <div class="helper err">Daily transfer limit is 50,000 QAR.</div>
+  </div>
+</body></html>

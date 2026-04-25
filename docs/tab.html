@@ -1,0 +1,11 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><title>908 Doha · Tab</title>
+<link rel="stylesheet" href="../colors_and_type.css"><link rel="stylesheet" href="./docs.css">
+</head><body><div class="app">
+<aside class="sidebar" id="sidebar"></aside>
+<main class="content" id="content"></main>
+<aside class="otp" id="otp"></aside>
+</div><script>window.PAGE={"id":"tab","name":"Tab","eyebrow":"Inputs","lead":"Underlined tabs for major page sections. Indicator slides between tabs.","sections":[{"id":"default","title":"Default","preview":"<style>.tb-row{display:flex;gap:28px;border-bottom:1px solid var(--border-subtle);position:relative;width:320px}.tb-row button{border:0;background:transparent;padding:14px 0;font-family:inherit;font-size:15px;font-weight:500;color:var(--text-tertiary);cursor:pointer;transition:color .2s var(--ease-soft),transform .18s var(--ease-spring);letter-spacing:-0.003em;transform-origin:center}.tb-row button:active{transform:scale(.88)}.tb-row button.pop{animation:tbpop .36s var(--ease-spring)}@keyframes tbpop{0%{transform:scale(1)}40%{transform:scale(.9)}100%{transform:scale(1)}}.tb-row button.on{color:var(--text-primary);font-weight:700}.tb-ind{position:absolute;bottom:-1px;height:2.5px;background:var(--accent-brand);border-radius:99px;transition:transform .48s var(--ease-soft),width .48s var(--ease-soft)}</style>\n    <div class=\"tb-row\" onclick=\"if(event.target.tagName!=='BUTTON')return;const btns=[...this.querySelectorAll('button')];btns.forEach(b=>b.classList.remove('on','pop'));event.target.classList.add('on');void event.target.offsetWidth;event.target.classList.add('pop');const ind=this.querySelector('.tb-ind');const r=event.target.getBoundingClientRect();const rp=this.getBoundingClientRect();ind.style.width=r.width+'px';ind.style.transform='translateX('+(r.left-rp.left)+'px)'\"><button class=\"on\">Activity</button><button>Cards</button><button>Insights</button><div class=\"tb-ind\" style=\"width:58px;transform:translateX(0)\"></div></div>","props":[{"name":"value","type":"string"},{"name":"tabs","type":"{label,value}[]"},{"name":"onChange","type":"(v)=>void"}]}]};</script>
+<script src="./page.js"></script><script src="./docs.js"></script>
+<script src="./interactions.js"></script>
+</body></html>

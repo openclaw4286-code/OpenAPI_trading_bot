@@ -1,0 +1,32 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{background:var(--surface);margin:0;padding:20px;color:var(--text-primary);font-family:var(--font-sans);overflow:hidden;}
+  .lbl{font-size:11px;font-weight:600;color:var(--text-secondary);margin:0 0 12px;letter-spacing:0.04em;text-transform:uppercase;}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+  .cell{border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:14px 12px;overflow:hidden;position:relative;height:112px;}
+  .ball{width:26px;height:26px;border-radius:50%;background:var(--grey-900);position:absolute;top:24px;left:12px;}
+  .name{position:absolute;bottom:12px;left:12px;font-size:11px;font-weight:600;color:var(--text-primary);}
+  .meta{position:absolute;bottom:12px;right:12px;font-family:var(--font-mono);font-size:9px;color:var(--text-tertiary);}
+  /* soft (signature) — sweeps across */
+  .c1 .ball{animation:soft 2600ms var(--ease-soft) infinite;}
+  .c2 .ball{animation:soft 2600ms var(--ease-emphasis) infinite;}
+  .c3 .ball{animation:soft 2600ms var(--ease-spring) infinite;}
+  .c4 .ball{animation:soft 2600ms linear infinite;}
+  @keyframes soft{
+    0%{transform:translateX(0);}
+    40%{transform:translateX(120px);}
+    50%{transform:translateX(120px);}
+    90%{transform:translateX(0);}
+    100%{transform:translateX(0);}
+  }
+</style></head>
+<body>
+  <div class="lbl">Motion · Easing curves (watch the ball)</div>
+  <div class="grid">
+    <div class="cell c1"><div class="ball"></div><div class="name">ease-soft <span style="color:var(--text-tertiary);font-weight:500;">· signature</span></div><div class="meta">.32,.72,0,1</div></div>
+    <div class="cell c2"><div class="ball"></div><div class="name">ease-emphasis</div><div class="meta">.2,0,0,1</div></div>
+    <div class="cell c3"><div class="ball"></div><div class="name">ease-spring</div><div class="meta">.34,1.56,.64,1</div></div>
+    <div class="cell c4"><div class="ball"></div><div class="name">linear <span style="color:var(--text-tertiary);font-weight:500;">· avoid</span></div><div class="meta">—</div></div>
+  </div>
+</body></html>
