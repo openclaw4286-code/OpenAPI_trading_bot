@@ -3,11 +3,10 @@ import Sparkline from './Sparkline.jsx';
 import { formatKrw, formatPct, sentimentColor } from '../data/format.js';
 import { equityCurve } from '../data/series.js';
 
-// Hero card: the headline number for the day. Now anchored by an
-// embedded equity-curve sparkline that fills the right half so the
-// card has actual visual weight rather than reading as a quote slip.
-// Background uses the soft tone of the realized-P&L colour to
-// reinforce sentiment at a glance.
+// Hero card built for Toss-style visual weight: huge headline number
+// (48px / 800), colored percentage chip, dense secondary stats row,
+// and a slim full-width sparkline at the bottom that gives the card a
+// real visual story without washing the type out behind a gradient.
 
 export default function PnLHero({ pnl }) {
   const realizedColor = sentimentColor(pnl.realizedKrw);
@@ -25,84 +24,64 @@ export default function PnLHero({ pnl }) {
 
   return (
     <section
-      className="relative overflow-hidden rounded-2xl"
+      className="overflow-hidden rounded-2xl"
       style={{
-        background: `linear-gradient(135deg, ${realizedSoft} 0%, var(--surface) 70%)`,
+        background: 'var(--surface)',
         border: '1px solid var(--border-subtle)',
         boxShadow: 'var(--elev-1)',
       }}
     >
-      {/* Sparkline fills the card behind the numbers */}
-      <div
-        className="pointer-events-none absolute inset-y-0 right-0"
-        style={{ width: '60%', opacity: 0.9 }}
-      >
-        <Sparkline
-          data={curve}
-          width={260}
-          height={170}
-          strokeWidth={2.25}
-          color={realizedColor}
-          showDot
-          className="h-full w-full"
-        />
-      </div>
-
-      <div className="relative p-5">
-        <div className="flex items-center gap-1.5">
+      <div className="px-5 pt-5">
+        <div className="flex items-center justify-between">
           <span
-            className="t-caption"
+            className="t-label"
             style={{
-              color: 'var(--text-tertiary)',
-              letterSpacing: '0.04em',
-              textTransform: 'uppercase',
+              color: 'var(--text-secondary)',
+              fontWeight: 600,
             }}
           >
-            오늘 실현
+            오늘 실현 손익
           </span>
-          <Trend
-            size={13}
-            strokeWidth={2}
-            style={{ color: realizedColor }}
-          />
+          <span
+            className="num-mono inline-flex items-center gap-1 rounded-full px-2 py-0.5 t-caption"
+            style={{
+              background: realizedSoft,
+              color: realizedColor,
+              fontWeight: 700,
+            }}
+          >
+            <Trend size={11} strokeWidth={2.5} />
+            {formatPct(pnl.realizedPct, { sign: true })}
+          </span>
         </div>
 
         <div
-          className="num-mono mt-1.5"
+          className="num-mono mt-2"
           style={{
-            fontSize: 36,
-            lineHeight: '44px',
+            fontSize: 44,
+            lineHeight: '52px',
             fontWeight: 800,
-            color: realizedColor,
-            letterSpacing: '-0.02em',
+            color: 'var(--text-primary)',
+            letterSpacing: '-0.025em',
           }}
         >
           {formatKrw(pnl.realizedKrw, { sign: true })}
         </div>
-        <div
-          className="num-mono mt-0.5 t-label"
-          style={{ color: realizedColor, fontWeight: 600 }}
-        >
-          {formatPct(pnl.realizedPct, { sign: true })}
-        </div>
 
         <div
-          className="mt-5 flex items-end justify-between gap-3 rounded-xl p-3"
-          style={{
-            background: 'rgba(255,255,255,0.85)',
-            backdropFilter: 'blur(4px)',
-            border: '1px solid var(--border-subtle)',
-          }}
+          className="mt-4 grid grid-cols-2 gap-3 border-t pt-4"
+          style={{ borderColor: 'var(--border-subtle)' }}
         >
           <div>
             <div className="t-caption" style={{ color: 'var(--text-tertiary)' }}>
               미실현
             </div>
             <div
-              className="num-mono t-heading2"
+              className="num-mono mt-0.5"
               style={{
-                color: sentimentColor(pnl.unrealizedKrw),
+                fontSize: 18,
                 fontWeight: 700,
+                color: sentimentColor(pnl.unrealizedKrw),
               }}
             >
               {formatKrw(pnl.unrealizedKrw, { sign: true })}
@@ -113,13 +92,30 @@ export default function PnLHero({ pnl }) {
               노출
             </div>
             <div
-              className="num-mono t-heading2"
-              style={{ color: 'var(--text-primary)', fontWeight: 700 }}
+              className="num-mono mt-0.5"
+              style={{
+                fontSize: 18,
+                fontWeight: 700,
+                color: 'var(--text-primary)',
+              }}
             >
               {formatPct(pnl.exposurePct, { digits: 1 })}
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="-mb-1 h-12 w-full">
+        <Sparkline
+          data={curve}
+          width={400}
+          height={48}
+          strokeWidth={2}
+          color={realizedColor}
+          fill
+          showDot
+          className="h-full w-full"
+        />
       </div>
     </section>
   );
