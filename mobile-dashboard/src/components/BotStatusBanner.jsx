@@ -1,11 +1,9 @@
-import { Pause, Play, OctagonX } from 'lucide-react';
-import IconButton from '@ds/components/IconButton.jsx';
-import Button from '@ds/components/Button.jsx';
 import { formatAgo } from '../data/format.js';
 
-// Banner that anchors the home screen — surfaces the bot lifecycle state
-// (RUNNING / PAUSED / ERROR / STOPPED) plus the operator's two emergency
-// controls. Color fully driven by tokens so dark mode flips for free.
+// Read-only status display. Surfaces the bot lifecycle state
+// (RUNNING / PAUSED / ERROR / STOPPED) + last tick. No actions —
+// control plane lives elsewhere (CLI / Slack). Color is fully
+// token-driven so dark mode flips for free if/when enabled.
 
 const STATE_STYLE = {
   RUNNING: {
@@ -34,66 +32,41 @@ const STATE_STYLE = {
   },
 };
 
-export default function BotStatusBanner({ status, onPause, onResume, onKill }) {
+export default function BotStatusBanner({ status }) {
   const s = STATE_STYLE[status.state] ?? STATE_STYLE.STOPPED;
-  const isRunning = status.state === 'RUNNING';
-
   return (
     <section
       className="rounded-2xl p-4"
       style={{ background: s.bg, border: '1px solid var(--border-subtle)' }}
     >
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <span
-            aria-hidden="true"
-            className="h-2.5 w-2.5 shrink-0 rounded-full"
-            style={{
-              background: s.dot,
-              animation: s.pulse ? 'dsPulse 1.2s ease-in-out infinite' : 'none',
-            }}
-          />
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              <span className="t-label" style={{ fontWeight: 600 }}>{s.label}</span>
-              <span className="t-caption" style={{ color: 'var(--text-tertiary)' }}>
-                · {status.env} · {status.testMode ? 'TEST_MODE' : 'LIVE'}
-              </span>
-            </div>
-            <div
-              className="t-caption num-mono"
+      <div className="flex items-center gap-2.5">
+        <span
+          aria-hidden="true"
+          className="h-2.5 w-2.5 shrink-0 rounded-full"
+          style={{
+            background: s.dot,
+            animation: s.pulse ? 'dsPulse 1.2s ease-in-out infinite' : 'none',
+          }}
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <span className="t-label" style={{ fontWeight: 700 }}>
+              {s.label}
+            </span>
+            <span
+              className="t-caption"
               style={{ color: 'var(--text-tertiary)' }}
             >
-              last tick {formatAgo(status.lastTickTs)}
-            </div>
+              · {status.env} · {status.testMode ? 'TEST_MODE' : 'LIVE'}
+            </span>
           </div>
-        </div>
-        <div className="flex shrink-0 items-center gap-1.5">
-          {isRunning ? (
-            <IconButton
-              icon={Pause}
-              variant="border"
-              size="md"
-              ariaLabel="일시정지"
-              onClick={onPause}
-            />
-          ) : (
-            <IconButton
-              icon={Play}
-              variant="brand"
-              size="md"
-              ariaLabel="재개"
-              onClick={onResume}
-            />
-          )}
-          <Button
-            variant="danger"
-            size="md"
-            icon={OctagonX}
-            onClick={onKill}
+          <div
+            className="t-caption num-mono"
+            style={{ color: 'var(--text-tertiary)' }}
           >
-            KILL
-          </Button>
+            last tick {formatAgo(status.lastTickTs)} · 세션{' '}
+            {status.sessionOpen}–{status.sessionClose}
+          </div>
         </div>
       </div>
     </section>

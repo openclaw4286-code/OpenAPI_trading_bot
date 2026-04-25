@@ -1,8 +1,8 @@
 import { useParams } from 'react-router-dom';
 import { Check, Circle, Triangle } from 'lucide-react';
 import ScreenHeader from '../components/ScreenHeader.jsx';
-import Button from '@ds/components/Button.jsx';
 import EmptyScaffold from '@ds/components/EmptyScaffold.jsx';
+import Skeleton from '@ds/components/Skeleton.jsx';
 import {
   formatPrice,
   formatRMultiple,
@@ -11,37 +11,19 @@ import {
 } from '../data/format.js';
 import { MOCK_POSITIONS } from '../data/mock.js';
 
-// TPSLLadder — vertical stack of TP1/TP2/TP3 + Stop with status icons.
-// Inline rather than promoted to a component until/unless reused.
+// Read-only position detail. Skeleton stands in for the future
+// candle-chart panel (TradingView Lightweight Charts) so the layout
+// reserves the right space and the eye doesn't bounce when the chart
+// component lands.
+
 function TPSLLadder({ position }) {
   const dirSign = position.direction === 'bull' ? 1 : -1;
   const r = Math.abs(position.entry - position.stop);
   const rows = [
-    {
-      label: 'TP1',
-      price: position.targets[0],
-      r: dirSign * 0.5,
-      done: position.tp1Done,
-    },
-    {
-      label: 'TP2',
-      price: position.targets[1],
-      r: dirSign * 1.5,
-      done: position.tp2Done,
-    },
-    {
-      label: 'TP3',
-      price: position.targets[2],
-      r: dirSign * 3.0,
-      done: position.tp3Done,
-    },
-    {
-      label: 'Stop',
-      price: position.stop,
-      r: position.stop === position.entry ? 0 : -1,
-      done: false,
-      isStop: true,
-    },
+    { label: 'TP1',  price: position.targets[0], r: dirSign * 0.5, done: position.tp1Done },
+    { label: 'TP2',  price: position.targets[1], r: dirSign * 1.5, done: position.tp2Done },
+    { label: 'TP3',  price: position.targets[2], r: dirSign * 3.0, done: position.tp3Done },
+    { label: 'Stop', price: position.stop, r: position.stop === position.entry ? 0 : -1, isStop: true },
   ];
   return (
     <ul className="flex flex-col gap-1.5">
@@ -95,7 +77,7 @@ function TPSLLadder({ position }) {
               ? row.r === 0
                 ? 'BE · ratchet'
                 : 'init'
-              : formatRMultiple(r ? row.r : 0).replace('+', '+')}
+              : formatRMultiple(r ? row.r : 0)}
           </span>
         </li>
       ))}
@@ -217,6 +199,31 @@ export default function PositionDetail() {
             border: '1px solid var(--border-subtle)',
           }}
         >
+          <div className="mb-2 flex items-baseline justify-between">
+            <h3 className="t-heading2" style={{ fontWeight: 600 }}>차트</h3>
+            <span
+              className="t-caption"
+              style={{ color: 'var(--text-tertiary)' }}
+            >
+              15m · ICT overlay
+            </span>
+          </div>
+          <Skeleton width="100%" height={180} rounded={12} />
+          <p
+            className="mt-2 t-caption"
+            style={{ color: 'var(--text-tertiary)' }}
+          >
+            캔들 + TP/SL/BE 라인은 다음 단계에서 연결됩니다.
+          </p>
+        </section>
+
+        <section
+          className="rounded-2xl p-4"
+          style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--border-subtle)',
+          }}
+        >
           <h3 className="t-heading2 mb-3" style={{ fontWeight: 600 }}>
             체크포인트
           </h3>
@@ -231,7 +238,8 @@ export default function PositionDetail() {
           }}
         >
           <h3 className="t-heading2 mb-2" style={{ fontWeight: 600 }}>
-            체결 내역 <span style={{ color: 'var(--text-tertiary)' }}>
+            체결 내역{' '}
+            <span style={{ color: 'var(--text-tertiary)' }}>
               {position.fills.length}
             </span>
           </h3>
@@ -267,15 +275,6 @@ export default function PositionDetail() {
             {' '}{position.enteredAt}
           </p>
         </section>
-
-        <div className="grid grid-cols-2 gap-2">
-          <Button variant="ghost" size="lg">
-            트레일 일시중지
-          </Button>
-          <Button variant="danger" size="lg">
-            강제 청산
-          </Button>
-        </div>
       </div>
     </>
   );

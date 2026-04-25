@@ -1,8 +1,11 @@
 import { AlertTriangle } from 'lucide-react';
 import ScreenHeader from '../components/ScreenHeader.jsx';
-import Button from '@ds/components/Button.jsx';
 import { formatPct, formatRMultiple, sentimentColor } from '../data/format.js';
 import { MOCK_BACKTEST } from '../data/mock.js';
+
+// Read-only backtest summary. The actual run trigger lives in the
+// Python CLI (`backtest.runner.backtest_portfolio`) — this view only
+// surfaces the most recent persisted result.
 
 function Stat({ label, value, color }) {
   return (
@@ -12,7 +15,11 @@ function Stat({ label, value, color }) {
       </div>
       <div
         className="num-mono mt-0.5"
-        style={{ fontSize: 18, fontWeight: 600, color: color ?? 'var(--text-primary)' }}
+        style={{
+          fontSize: 18,
+          fontWeight: 600,
+          color: color ?? 'var(--text-primary)',
+        }}
       >
         {value}
       </div>
@@ -135,15 +142,6 @@ export default function Backtest() {
             })}
           </ul>
         </section>
-
-        <div className="grid grid-cols-2 gap-2">
-          <Button variant="secondary" size="lg">
-            공유
-          </Button>
-          <Button variant="primary" size="lg">
-            새 백테스트
-          </Button>
-        </div>
       </div>
     </>
   );

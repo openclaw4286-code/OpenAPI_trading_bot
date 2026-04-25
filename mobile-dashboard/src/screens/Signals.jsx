@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Check, X, Clock } from 'lucide-react';
 import ScreenHeader from '../components/ScreenHeader.jsx';
+import SearchField from '@ds/components/SearchField.jsx';
 import EmptyScaffold from '@ds/components/EmptyScaffold.jsx';
 import { MOCK_SIGNALS } from '../data/mock.js';
 
@@ -87,18 +88,32 @@ function SignalRow({ sig }) {
 
 export default function Signals() {
   const [filter, setFilter] = useState('all');
-  const filtered = useMemo(
-    () =>
-      filter === 'all'
-        ? MOCK_SIGNALS
-        : MOCK_SIGNALS.filter((s) => s.outcome === filter),
-    [filter],
-  );
+  const [q, setQ] = useState('');
+
+  const filtered = useMemo(() => {
+    const t = q.trim().toLowerCase();
+    return MOCK_SIGNALS.filter((s) => {
+      if (filter !== 'all' && s.outcome !== filter) return false;
+      if (
+        t &&
+        !s.symbol.toLowerCase().includes(t) &&
+        !s.name.toLowerCase().includes(t)
+      )
+        return false;
+      return true;
+    });
+  }, [filter, q]);
 
   return (
     <>
       <ScreenHeader title="오늘 신호" />
       <div className="p-4 pb-8">
+        <SearchField
+          value={q}
+          onChange={setQ}
+          placeholder="종목코드 또는 이름"
+          className="mb-3 w-full"
+        />
         <div
           className="no-scrollbar -mx-1 mb-3 flex gap-1.5 overflow-x-auto px-1"
           role="tablist"
@@ -133,8 +148,8 @@ export default function Signals() {
         {filtered.length === 0 ? (
           <EmptyScaffold
             title="해당 신호가 없어요"
-            subtitle="다른 필터를 선택해보세요."
-            spec={`filter=${filter}`}
+            subtitle="다른 필터 또는 검색어를 시도해보세요."
+            spec={`filter=${filter}${q ? ` · q="${q}"` : ''}`}
           />
         ) : (
           <div className="flex flex-col gap-2">

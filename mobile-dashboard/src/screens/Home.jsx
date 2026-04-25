@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight, Clock } from 'lucide-react';
 import ScreenHeader from '../components/ScreenHeader.jsx';
@@ -7,7 +6,6 @@ import PnLHero from '../components/PnLHero.jsx';
 import PositionMiniCard from '../components/PositionMiniCard.jsx';
 import EventLogRow from '../components/EventLogRow.jsx';
 import PipelineFunnel from '../components/PipelineFunnel.jsx';
-import KillModal from '../components/KillModal.jsx';
 import {
   MOCK_BOT_STATUS,
   MOCK_PNL,
@@ -16,14 +14,14 @@ import {
   MOCK_PIPELINE,
 } from '../data/mock.js';
 
-// Home screen — at-a-glance dashboard. Order matters: status → P&L →
-// positions → events → pipeline → shortcuts. Operator should be able to
-// answer "is it OK?" within 5 seconds of opening the app.
+// Read-only home dashboard. Order: status → P&L → top positions →
+// recent events → pipeline funnel → shortcuts. No control affordances —
+// operator drives the bot via CLI / scheduler / webhook elsewhere.
 
 const SHORTCUTS = [
-  { to: '/backtest',                   label: '신호 품질' },
-  { to: '/positions',                  label: '포지션 전체' },
-  { to: '/signals',                    label: '오늘 신호' },
+  { to: '/backtest',   label: '신호 품질' },
+  { to: '/positions',  label: '포지션 전체' },
+  { to: '/signals',    label: '오늘 신호' },
 ];
 
 function nowKstClock() {
@@ -34,9 +32,6 @@ function nowKstClock() {
 }
 
 export default function Home() {
-  const [killOpen, setKillOpen] = useState(false);
-  const [status, setStatus] = useState(MOCK_BOT_STATUS);
-
   return (
     <>
       <ScreenHeader
@@ -52,12 +47,7 @@ export default function Home() {
         }
       />
       <div className="flex flex-col gap-3 p-4 pb-8">
-        <BotStatusBanner
-          status={status}
-          onPause={() => setStatus({ ...status, state: 'PAUSED' })}
-          onResume={() => setStatus({ ...status, state: 'RUNNING' })}
-          onKill={() => setKillOpen(true)}
-        />
+        <BotStatusBanner status={MOCK_BOT_STATUS} />
 
         <PnLHero pnl={MOCK_PNL} />
 
@@ -144,15 +134,6 @@ export default function Home() {
           </div>
         </section>
       </div>
-
-      <KillModal
-        open={killOpen}
-        onClose={() => setKillOpen(false)}
-        onConfirm={() => {
-          setStatus({ ...status, state: 'STOPPED' });
-          setKillOpen(false);
-        }}
-      />
     </>
   );
 }
