@@ -7,17 +7,21 @@ import {
 } from '../data/format.js';
 
 // Position list row. Visual pattern lifted from 908-doha-ui VaultEntry
-// (square accent leading badge + title + subtitle + trailing meta), but
-// adapted for read-only navigation: the entire card is a single Link,
-// trailing slot shows the R-multiple and direction arrow rather than
-// hover-revealed action buttons.
+// (square accent leading badge + title + subtitle + trailing meta).
+// Badge shows the first glyph of the company name (matches the
+// MemberAvatar / VaultEntry convention); the 6-digit symbol code lives
+// in the subtitle alongside price + qty so both names are visible at a
+// glance without colliding for screen real estate.
 
 export default function PositionMiniCard({ position }) {
   const dirColor = sentimentColor(position.rMultiple);
   const Arrow = position.rMultiple >= 0 ? ArrowUpRight : ArrowDownRight;
-  const subtitle = `${formatPrice(position.currentPrice)} · ${
-    position.remainingQty
-  }/${position.initialQty}주 · ${tpProgress(position)}`;
+  const glyph = firstGlyph(position.name);
+  const subtitle = `${position.symbol} · ${formatPrice(
+    position.currentPrice,
+  )} · ${position.remainingQty}/${position.initialQty}주 · ${tpProgress(
+    position,
+  )}`;
 
   return (
     <Link
@@ -32,15 +36,16 @@ export default function PositionMiniCard({ position }) {
       }}
     >
       <div
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl num-mono"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
         style={{
           background: 'var(--accent-brand-soft)',
           color: 'var(--accent-brand)',
           fontWeight: 700,
-          fontSize: 13,
+          fontSize: 16,
+          letterSpacing: '-0.02em',
         }}
       >
-        {position.symbol.slice(0, 4)}
+        {glyph}
       </div>
 
       <div className="min-w-0 flex-1">
@@ -71,9 +76,18 @@ export default function PositionMiniCard({ position }) {
   );
 }
 
+// Mirror MemberAvatar's firstGlyph: take the first non-space character
+// so Korean / Latin / digits all behave (삼성전자 → 삼, SK하이닉스 → S,
+// NAVER → N).
+function firstGlyph(name) {
+  if (!name) return '?';
+  const chars = Array.from(name.trim());
+  return chars[0]?.toUpperCase() ?? '?';
+}
+
 function tpProgress(p) {
   if (p.tp3Done) return 'TP3 ✓';
   if (p.tp2Done) return 'TP2 ✓';
-  if (p.tp1Done) return 'TP1 ✓ · BE';
+  if (p.tp1Done) return 'TP1 ✓';
   return 'pending TP1';
 }
