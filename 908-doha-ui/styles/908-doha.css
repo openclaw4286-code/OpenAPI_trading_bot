@@ -1,0 +1,90 @@
+/* ============================================================
+   908 Doha Design System — Full bundle
+   v0.9.0 — tokens + @font-face + base reset + semantic type classes.
+
+   For npm consumers:
+     import '908-doha-design-system';
+
+   For CDN / direct HTML:
+     <link rel="stylesheet" href=".../dist/908-doha.css">
+
+   Note: Pretendard OTF files are expected at ./fonts/ relative to
+   this stylesheet. If you host fonts elsewhere, use
+   908-doha.tokens.css (variables only) and declare @font-face
+   in your own stylesheet.
+   ============================================================ */
+
+/* ---------- Fonts (local Pretendard + Google CDN for Fraunces/JetBrains/Noto Kufi) ---------- */
+@font-face { font-family: "Pretendard"; font-weight: 100; font-style: normal; font-display: swap;
+  src: url("../fonts/Pretendard-Thin.otf") format("opentype"); }
+@font-face { font-family: "Pretendard"; font-weight: 200; font-style: normal; font-display: swap;
+  src: url("../fonts/Pretendard-ExtraLight.otf") format("opentype"); }
+@font-face { font-family: "Pretendard"; font-weight: 300; font-style: normal; font-display: swap;
+  src: url("../fonts/Pretendard-Light.otf") format("opentype"); }
+@font-face { font-family: "Pretendard"; font-weight: 400; font-style: normal; font-display: swap;
+  src: url("../fonts/Pretendard-Regular.otf") format("opentype"); }
+@font-face { font-family: "Pretendard"; font-weight: 500; font-style: normal; font-display: swap;
+  src: url("../fonts/Pretendard-Medium.otf") format("opentype"); }
+@font-face { font-family: "Pretendard"; font-weight: 600; font-style: normal; font-display: swap;
+  src: url("../fonts/Pretendard-SemiBold.otf") format("opentype"); }
+@font-face { font-family: "Pretendard"; font-weight: 700; font-style: normal; font-display: swap;
+  src: url("../fonts/Pretendard-Bold.otf") format("opentype"); }
+@font-face { font-family: "Pretendard"; font-weight: 800; font-style: normal; font-display: swap;
+  src: url("../fonts/Pretendard-ExtraBold.otf") format("opentype"); }
+@font-face { font-family: "Pretendard"; font-weight: 900; font-style: normal; font-display: swap;
+  src: url("../fonts/Pretendard-Black.otf") format("opentype"); }
+
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@300..900&display=swap');
+
+@import url('./908-doha.tokens.css');
+
+/* ---------- Base reset ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--body1-size);
+  line-height: var(--body1-lh);
+  letter-spacing: var(--body1-ls);
+  font-weight: var(--fw-regular);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ---------- Semantic type classes ---------- */
+.t-display  { font-size: var(--display-size);  line-height: var(--display-lh);
+              letter-spacing: var(--display-ls);  font-weight: var(--fw-bold); }
+.t-title1   { font-size: var(--title1-size);   line-height: var(--title1-lh);
+              letter-spacing: var(--title1-ls);   font-weight: var(--fw-bold); }
+.t-title2   { font-size: var(--title2-size);   line-height: var(--title2-lh);
+              letter-spacing: var(--title2-ls);   font-weight: var(--fw-semibold); }
+.t-title3   { font-size: var(--title3-size);   line-height: var(--title3-lh);
+              letter-spacing: var(--title3-ls);   font-weight: var(--fw-semibold); }
+.t-heading1 { font-size: var(--heading1-size); line-height: var(--heading1-lh);
+              letter-spacing: var(--heading1-ls); font-weight: var(--fw-semibold); }
+.t-heading2 { font-size: var(--heading2-size); line-height: var(--heading2-lh);
+              letter-spacing: var(--heading2-ls); font-weight: var(--fw-semibold); }
+.t-body1    { font-size: var(--body1-size);    line-height: var(--body1-lh);
+              letter-spacing: var(--body1-ls);    font-weight: var(--fw-regular); }
+.t-body2    { font-size: var(--body2-size);    line-height: var(--body2-lh);
+              letter-spacing: var(--body2-ls);    font-weight: var(--fw-regular); }
+.t-label    { font-size: var(--label-size);    line-height: var(--label-lh);
+              letter-spacing: var(--label-ls);    font-weight: var(--fw-medium); }
+.t-caption  { font-size: var(--caption-size);  line-height: var(--caption-lh);
+              letter-spacing: var(--caption-ls); font-weight: var(--fw-regular); }
+
+h1 { font-size: var(--title1-size);  line-height: var(--title1-lh);
+     letter-spacing: var(--title1-ls);  font-weight: var(--fw-bold); margin: 0; }
+h2 { font-size: var(--title2-size);  line-height: var(--title2-lh);
+     letter-spacing: var(--title2-ls);  font-weight: var(--fw-semibold); margin: 0; }
+h3 { font-size: var(--title3-size);  line-height: var(--title3-lh);
+     letter-spacing: var(--title3-ls);  font-weight: var(--fw-semibold); margin: 0; }
+h4 { font-size: var(--heading1-size); line-height: var(--heading1-lh);
+     letter-spacing: var(--heading1-ls); font-weight: var(--fw-semibold); margin: 0; }
+p  { margin: 0; }
+code, kbd, pre { font-family: var(--font-mono); font-size: 0.92em; }
