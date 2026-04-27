@@ -1,30 +1,38 @@
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, TrendingUp, FlaskConical } from 'lucide-react';
 import ScreenHeader from '../components/ScreenHeader.jsx';
-import NoteCard from '@ds/components/NoteCard.jsx';
 import Sparkline from '../components/Sparkline.jsx';
-import { formatPct, formatRMultiple, sentimentColor } from '../data/format.js';
+import {
+  formatPct,
+  formatRMultiple,
+  sentimentColor,
+} from '../data/format.js';
 import { MOCK_BACKTEST } from '../data/mock.js';
 import { pricePath } from '../data/series.js';
 
-// Read-only backtest summary. Per-symbol rows ride 908-doha-ui's
-// NoteCard component with a synthesized note shape — title = symbol,
-// snippet = stat line, tags = numeric badges, author = the synthetic
-// BOT member injected by the AuthProvider stub. The portfolio hero
-// stays bespoke because no design-system primitive carries a 6-stat
-// grid.
+/**
+ * Backtest summary. Hero card carries the portfolio result with an
+ * equity sparkline anchoring the bottom edge (same pattern as the
+ * P&L hero on Home, so the visual grammar stays consistent). Below
+ * it: a compact per-symbol grid where each row's avg-R is the
+ * dominant signal and underperformers earn a warning glyph.
+ */
 
 function Stat({ label, value, color }) {
   return (
     <div>
-      <div className="t-caption" style={{ color: 'var(--text-tertiary)' }}>
+      <div
+        className="t-caption"
+        style={{ color: 'var(--text-tertiary)', fontWeight: 500 }}
+      >
         {label}
       </div>
       <div
         className="num-mono mt-0.5"
         style={{
-          fontSize: 18,
-          fontWeight: 700,
+          fontSize: 17,
+          fontWeight: 800,
           color: color ?? 'var(--text-primary)',
+          letterSpacing: '-0.015em',
         }}
       >
         {value}
@@ -33,79 +41,58 @@ function Stat({ label, value, color }) {
   );
 }
 
-// NoteCard expects { id, title, blocks, tags, pinned, updatedAt,
-// createdBy }. We synthesise a "report note" per symbol so the card
-// renders exactly like a real notes list entry.
-function symbolToNote(row) {
-  const blocks = [
-    {
-      id: `${row.symbol}-snip`,
-      type: 'text',
-      text: `${row.trades} trades · win ${(row.winRate * 100).toFixed(0)}% · avg ${formatRMultiple(row.avgR)}`,
-    },
-  ];
-  const tags = [];
-  if (row.avgR < 0) tags.push('UNDERPERFORM');
-  tags.push(`${(row.winRate * 100).toFixed(0)}% win`);
-  return {
-    id: row.symbol,
-    title: `${row.symbol}  ${row.name}`,
-    blocks,
-    tags,
-    pinned: row.avgR > 0.3,
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-    createdBy: 'bot',
-    updatedBy: 'bot',
-  };
-}
-
 export default function Backtest() {
   const { runAt, portfolio, perSymbol } = MOCK_BACKTEST;
-
-  // Synthesize a portfolio equity curve from the total return; gives
-  // the hero card the same visual weight as the home P&L hero.
-  const equityCurve = pricePath('portfolio', 1.0, 1.0 + portfolio.totalReturn, 60);
+  const equityCurveData = pricePath('portfolio', 1.0, 1.0 + portfolio.totalReturn, 80);
+  const totalColor = sentimentColor(portfolio.totalReturn);
 
   return (
     <>
       <ScreenHeader title="백테스트" />
-      <div className="flex flex-col gap-3 p-4 pb-8">
+      <div className="flex flex-col gap-4 p-4 pb-8">
         <section
-          className="relative overflow-hidden rounded-2xl p-4"
+          className="overflow-hidden rounded-2xl"
           style={{
-            background: `linear-gradient(135deg, var(--state-positive-soft) 0%, var(--surface) 70%)`,
+            background: 'var(--surface)',
             border: '1px solid var(--border-subtle)',
-            boxShadow: 'var(--elev-1)',
+            boxShadow: 'var(--elev-2)',
           }}
         >
-          <div
-            className="pointer-events-none absolute inset-y-0 right-0"
-            style={{ width: '55%', opacity: 0.85 }}
-          >
-            <Sparkline
-              data={equityCurve}
-              width={240}
-              height={150}
-              strokeWidth={2}
-              color="var(--state-positive)"
-              showDot
-              className="h-full w-full"
-            />
-          </div>
-          <div className="relative">
+          <div className="px-5 pt-5 pb-2">
             <div className="flex items-center justify-between">
-              <h3 className="t-heading2" style={{ fontWeight: 700 }}>
-                포트폴리오
-              </h3>
               <span
-                className="t-caption num-mono"
-                style={{ color: 'var(--text-tertiary)' }}
+                className="t-caption inline-flex items-center gap-1.5"
+                style={{
+                  color: 'var(--text-tertiary)',
+                  fontWeight: 600,
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                }}
               >
-                {runAt}
+                <FlaskConical size={12} strokeWidth={2.5} />
+                포트폴리오
+              </span>
+              <span
+                className="num-mono inline-flex items-center gap-1 rounded-full px-2.5 py-1"
+                style={{
+                  background:
+                    portfolio.totalReturn >= 0
+                      ? 'var(--state-positive-soft)'
+                      : 'var(--state-negative-soft)',
+                  color: totalColor,
+                  fontWeight: 800,
+                  fontSize: 12,
+                }}
+              >
+                <TrendingUp size={12} strokeWidth={2.5} />
+                {formatPct(portfolio.totalReturn, { sign: true, digits: 1 })}
               </span>
             </div>
-            <div className="mt-3 grid grid-cols-3 gap-3">
+            <div className="mt-1 t-caption num-mono" style={{ color: 'var(--text-tertiary)' }}>
+              {runAt}
+            </div>
+
+            <div className="mt-4 grid grid-cols-3 gap-3 border-t pt-3" style={{ borderColor: 'var(--border-subtle)' }}>
               <Stat label="trades" value={portfolio.nTrades} />
               <Stat
                 label="win rate"
@@ -117,48 +104,120 @@ export default function Backtest() {
                 color={sentimentColor(portfolio.avgR)}
               />
               <Stat
-                label="return"
-                value={formatPct(portfolio.totalReturn, { sign: true, digits: 0 })}
-                color={sentimentColor(portfolio.totalReturn)}
-              />
-              <Stat
                 label="max DD"
                 value={formatPct(portfolio.maxDrawdown, { sign: true, digits: 0 })}
                 color={sentimentColor(portfolio.maxDrawdown)}
               />
               <Stat label="LLM rej" value={portfolio.llmRejected} />
+              <Stat label="skip" value={portfolio.skippedNoRoom} />
             </div>
+          </div>
+          <div className="-mb-1 h-12 w-full">
+            <Sparkline
+              data={equityCurveData}
+              width={400}
+              height={48}
+              strokeWidth={2}
+              color={totalColor}
+              fill
+              showDot
+              className="h-full w-full"
+            />
           </div>
         </section>
 
-        <section>
+        <section className="flex flex-col gap-2">
           <h3
-            className="t-caption mb-2 px-1"
+            className="t-caption px-1"
             style={{
               color: 'var(--text-tertiary)',
-              letterSpacing: '0.04em',
+              letterSpacing: '0.06em',
               textTransform: 'uppercase',
-              fontWeight: 600,
+              fontWeight: 700,
             }}
           >
             종목별 시그널 품질
           </h3>
-          <div className="grid grid-cols-1 gap-2">
-            {perSymbol.map((row) => (
-              <div key={row.symbol} className="relative">
-                <NoteCard note={symbolToNote(row)} onOpen={() => {}} />
-                {row.avgR < 0 && (
-                  <span
-                    className="absolute right-3 top-3 inline-flex items-center gap-1 t-caption"
-                    style={{ color: 'var(--state-warning)', fontWeight: 600 }}
+          <ul className="flex flex-col gap-2">
+            {perSymbol.map((row) => {
+              const warn = row.avgR < 0;
+              const rColor = sentimentColor(row.avgR);
+              return (
+                <li
+                  key={row.symbol}
+                  className="flex items-center gap-3 rounded-2xl p-4"
+                  style={{
+                    background: 'var(--surface)',
+                    border: '1px solid var(--border-subtle)',
+                    boxShadow: 'var(--elev-1)',
+                  }}
+                >
+                  <div
+                    className="flex shrink-0 items-center justify-center rounded-xl"
+                    style={{
+                      width: 40,
+                      height: 40,
+                      background: warn
+                        ? 'var(--state-warning-soft)'
+                        : 'var(--accent-brand-soft)',
+                      color: warn
+                        ? 'var(--state-warning)'
+                        : 'var(--accent-brand)',
+                      fontWeight: 800,
+                      fontSize: 16,
+                    }}
                   >
-                    <AlertTriangle size={12} strokeWidth={2.5} />
-                    저조
+                    {row.name.trim().charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline gap-2">
+                      <span
+                        className="t-body2"
+                        style={{ fontWeight: 700, color: 'var(--text-primary)' }}
+                      >
+                        {row.name}
+                      </span>
+                      <span
+                        className="num-mono t-caption"
+                        style={{ color: 'var(--text-tertiary)' }}
+                      >
+                        {row.symbol}
+                      </span>
+                    </div>
+                    <div
+                      className="mt-0.5 num-mono t-caption"
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
+                      {row.trades} trades · {(row.winRate * 100).toFixed(0)}% win
+                    </div>
+                  </div>
+                  <span
+                    className="num-mono inline-flex items-center justify-center rounded-lg"
+                    style={{
+                      minWidth: 64,
+                      padding: '4px 10px',
+                      background:
+                        row.avgR >= 0
+                          ? 'var(--state-positive-soft)'
+                          : 'var(--state-negative-soft)',
+                      color: rColor,
+                      fontWeight: 800,
+                      fontSize: 13,
+                    }}
+                  >
+                    {formatRMultiple(row.avgR)}
                   </span>
-                )}
-              </div>
-            ))}
-          </div>
+                  {warn && (
+                    <AlertTriangle
+                      size={16}
+                      strokeWidth={2}
+                      style={{ color: 'var(--state-warning)' }}
+                    />
+                  )}
+                </li>
+              );
+            })}
+          </ul>
         </section>
       </div>
     </>

@@ -1,10 +1,13 @@
-import { Check, X as XIcon } from 'lucide-react';
+import { Check, X as XIcon, Server, Activity, Bell, Lock, Database } from 'lucide-react';
 import ScreenHeader from '../components/ScreenHeader.jsx';
 import { MOCK_SETTINGS } from '../data/mock.js';
 
-// Read-only configuration view. Mirrors the operator's .env / config.py
-// values so the operator can verify them from a phone without SSH'ing
-// in. Edits intentionally absent — config changes belong on the host.
+/**
+ * Configuration view — strictly read-only. Mirrors the operator's
+ * .env / config.py without offering edits, since config changes
+ * belong on the host. Each group is prefixed with a small icon for
+ * scannability and rows use Pill / BoolGlyph for compact density.
+ */
 
 const NOTIFY_LABELS = {
   entry:        '진입 / 청산',
@@ -13,23 +16,27 @@ const NOTIFY_LABELS = {
   tickSummary:  '매 틱 요약',
 };
 
-function Group({ title, children }) {
+function Group({ title, icon: Icon, children }) {
   return (
     <section
       className="rounded-2xl px-4"
       style={{
         background: 'var(--surface)',
         border: '1px solid var(--border-subtle)',
+        boxShadow: 'var(--elev-1)',
       }}
     >
       <h3
-        className="t-caption pt-3 pb-1"
+        className="flex items-center gap-1.5 pt-4 pb-1"
         style={{
           color: 'var(--text-tertiary)',
-          letterSpacing: '0.04em',
+          letterSpacing: '0.06em',
           textTransform: 'uppercase',
+          fontWeight: 700,
+          fontSize: 11,
         }}
       >
+        {Icon && <Icon size={12} strokeWidth={2.5} />}
         {title}
       </h3>
       <div className="divide-y" style={{ borderColor: 'var(--border-subtle)' }}>
@@ -43,11 +50,14 @@ function Row({ label, hint, control }) {
   return (
     <div className="flex items-center gap-3 py-3">
       <div className="min-w-0 flex-1">
-        <div className="t-body2" style={{ fontWeight: 500 }}>
+        <div
+          className="t-body2"
+          style={{ fontWeight: 600, color: 'var(--text-primary)' }}
+        >
           {label}
         </div>
         {hint && (
-          <div className="t-caption" style={{ color: 'var(--text-tertiary)' }}>
+          <div className="t-caption mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
             {hint}
           </div>
         )}
@@ -59,16 +69,22 @@ function Row({ label, hint, control }) {
 
 function Pill({ children, tone = 'neutral' }) {
   const palette = {
-    neutral:   { bg: 'var(--surface-layered)', fg: 'var(--text-secondary)' },
+    neutral:   { bg: 'var(--surface-layered)',     fg: 'var(--text-secondary)' },
     positive:  { bg: 'var(--state-positive-soft)', fg: 'var(--state-positive)' },
-    warning:   { bg: 'var(--state-warning-soft)', fg: 'var(--state-warning)' },
-    brand:     { bg: 'var(--accent-brand-soft)', fg: 'var(--accent-brand)' },
+    warning:   { bg: 'var(--state-warning-soft)',  fg: 'var(--state-warning)' },
+    brand:     { bg: 'var(--accent-brand-soft)',   fg: 'var(--accent-brand)' },
   };
   const p = palette[tone] ?? palette.neutral;
   return (
     <span
-      className="t-caption rounded-full px-2.5 py-0.5 num-mono"
-      style={{ background: p.bg, color: p.fg, fontWeight: 600 }}
+      className="num-mono inline-flex items-center rounded-full px-2.5 py-0.5"
+      style={{
+        background: p.bg,
+        color: p.fg,
+        fontWeight: 700,
+        fontSize: 11,
+        letterSpacing: '-0.005em',
+      }}
     >
       {children}
     </span>
@@ -78,23 +94,28 @@ function Pill({ children, tone = 'neutral' }) {
 function BoolGlyph({ on }) {
   return on ? (
     <span
-      className="inline-flex h-5 w-5 items-center justify-center rounded-full"
+      className="inline-flex items-center justify-center rounded-full"
       style={{
-        background: 'var(--state-positive-soft)',
-        color: 'var(--state-positive)',
+        width: 22,
+        height: 22,
+        background: 'var(--state-positive)',
+        color: '#FFFFFF',
       }}
     >
-      <Check size={12} strokeWidth={2.75} />
+      <Check size={13} strokeWidth={3} />
     </span>
   ) : (
     <span
-      className="inline-flex h-5 w-5 items-center justify-center rounded-full"
+      className="inline-flex items-center justify-center rounded-full"
       style={{
+        width: 22,
+        height: 22,
         background: 'var(--surface-layered)',
         color: 'var(--text-tertiary)',
+        border: '1px solid var(--border-default)',
       }}
     >
-      <XIcon size={12} strokeWidth={2.5} />
+      <XIcon size={13} strokeWidth={2.5} />
     </span>
   );
 }
@@ -110,14 +131,14 @@ export default function Settings() {
           className="t-caption px-1"
           style={{ color: 'var(--text-tertiary)' }}
         >
-          조회 전용입니다. 변경은 서버의 <span className="num-mono">.env</span>{' '}
-          및 <span className="num-mono">config.py</span> 에서 이뤄집니다.
+          조회 전용입니다. 변경은 서버의 <span className="num-mono" style={{ fontWeight: 600 }}>.env</span>{' '}
+          및 <span className="num-mono" style={{ fontWeight: 600 }}>config.py</span> 에서 이뤄집니다.
         </p>
 
-        <Group title="환경">
+        <Group title="환경" icon={Server}>
           <Row
             label="KIS 환경"
-            hint={s.kisEnv === 'real' ? '실전 계좌' : '모의투자'}
+            hint={s.kisEnv === 'real' ? '실전 계좌' : '모의투자 (vps)'}
             control={
               <Pill tone={s.kisEnv === 'real' ? 'warning' : 'brand'}>
                 {s.kisEnv === 'real' ? 'REAL' : 'VPS'}
@@ -136,7 +157,7 @@ export default function Settings() {
           />
         </Group>
 
-        <Group title="파이프라인">
+        <Group title="파이프라인" icon={Activity}>
           <Row
             label="MTF 모드"
             hint={
@@ -158,7 +179,7 @@ export default function Settings() {
           />
         </Group>
 
-        <Group title="알림">
+        <Group title="알림" icon={Bell}>
           <Row
             label={`${s.webhook.provider} 웹훅`}
             hint={s.webhook.connected ? '연결됨' : '미연결'}
@@ -179,7 +200,7 @@ export default function Settings() {
           ))}
         </Group>
 
-        <Group title="세션">
+        <Group title="세션" icon={Lock}>
           <Row label="남은 일수" control={<Pill>22 / 30일</Pill>} />
         </Group>
       </div>

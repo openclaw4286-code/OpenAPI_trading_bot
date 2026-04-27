@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
-import { ChevronRight, Clock } from 'lucide-react';
+import { Clock, Activity, Bell, Sparkles } from 'lucide-react';
 import ScreenHeader from '../components/ScreenHeader.jsx';
+import SectionHeader from '../components/SectionHeader.jsx';
 import BotStatusBanner from '../components/BotStatusBanner.jsx';
 import PnLHero from '../components/PnLHero.jsx';
 import PositionMiniCard from '../components/PositionMiniCard.jsx';
@@ -14,14 +15,21 @@ import {
   MOCK_PIPELINE,
 } from '../data/mock.js';
 
-// Read-only home dashboard. Order: status → P&L → top positions →
-// recent events → pipeline funnel → shortcuts. No control affordances —
-// operator drives the bot via CLI / scheduler / webhook elsewhere.
-
+/**
+ * Home — at-a-glance dashboard. Information ladder:
+ *   1. Status (is the bot OK?)
+ *   2. P&L hero (how am I doing today?)
+ *   3. Open positions (what's working?)
+ *   4. Recent events (what just happened?)
+ *   5. Pipeline funnel (where is the bot stuck?)
+ *
+ * Each section has a SectionHeader with a leading icon + count chip
+ * + trailing "모두 보기" link for consistent vertical rhythm.
+ */
 const SHORTCUTS = [
-  { to: '/backtest',   label: '신호 품질' },
-  { to: '/positions',  label: '포지션 전체' },
-  { to: '/signals',    label: '오늘 신호' },
+  { to: '/positions',  label: '포지션', icon: Activity },
+  { to: '/signals',    label: '신호',   icon: Bell },
+  { to: '/backtest',   label: '백테',   icon: Sparkles },
 ];
 
 function nowKstClock() {
@@ -38,7 +46,7 @@ export default function Home() {
         title="ICT Trader"
         trailing={
           <span
-            className="t-caption num-mono flex items-center gap-1 px-2"
+            className="t-caption num-mono inline-flex items-center gap-1 px-2"
             style={{ color: 'var(--text-tertiary)' }}
           >
             <Clock size={13} strokeWidth={1.75} />
@@ -46,85 +54,90 @@ export default function Home() {
           </span>
         }
       />
-      <div className="flex flex-col gap-3 p-4 pb-8">
+      <div className="flex flex-col gap-4 p-4 pb-8">
         <BotStatusBanner status={MOCK_BOT_STATUS} />
 
         <PnLHero pnl={MOCK_PNL} />
 
-        <section className="mt-1">
-          <div className="mb-2 flex items-center justify-between">
-            <h3 className="t-heading2" style={{ fontWeight: 600 }}>
-              열린 포지션{' '}
-              <span style={{ color: 'var(--text-tertiary)' }}>
-                {MOCK_POSITIONS.length}
-              </span>
-            </h3>
-            <Link
-              to="/positions"
-              className="t-caption flex items-center gap-0.5"
-              style={{ color: 'var(--text-link)', textDecoration: 'none' }}
-            >
-              모두 보기
-              <ChevronRight size={13} strokeWidth={1.75} />
-            </Link>
-          </div>
-          <div className="flex flex-col gap-2">
-            {MOCK_POSITIONS.slice(0, 2).map((p) => (
-              <PositionMiniCard key={p.symbol} position={p} />
-            ))}
-          </div>
+        <section className="flex flex-col gap-2">
+          <SectionHeader
+            title="열린 포지션"
+            count={MOCK_POSITIONS.length}
+            icon={Activity}
+            actionTo="/positions"
+          />
+          {MOCK_POSITIONS.slice(0, 2).map((p) => (
+            <PositionMiniCard key={p.symbol} position={p} />
+          ))}
         </section>
 
-        <section className="mt-1">
-          <div className="mb-2 flex items-center justify-between">
-            <h3 className="t-heading2" style={{ fontWeight: 600 }}>
-              최근 이벤트
-            </h3>
-            <Link
-              to="/signals"
-              className="t-caption"
-              style={{ color: 'var(--text-link)', textDecoration: 'none' }}
-            >
-              전체 →
-            </Link>
-          </div>
-          <div className="flex flex-col gap-2">
-            {MOCK_RECENT_EVENTS.slice(0, 5).map((ev, i) => (
-              <EventLogRow key={i} event={ev} />
-            ))}
-          </div>
+        <section className="flex flex-col gap-2">
+          <SectionHeader
+            title="최근 이벤트"
+            icon={Bell}
+            actionTo="/signals"
+            actionLabel="전체"
+          />
+          {MOCK_RECENT_EVENTS.slice(0, 5).map((ev, i) => (
+            <EventLogRow key={i} event={ev} />
+          ))}
         </section>
 
         <PipelineFunnel pipeline={MOCK_PIPELINE} />
 
-        <section>
+        <section className="flex flex-col gap-2">
           <h3
-            className="t-caption mb-2 px-1"
+            className="t-caption px-1"
             style={{
               color: 'var(--text-tertiary)',
-              letterSpacing: '0.04em',
+              letterSpacing: '0.06em',
               textTransform: 'uppercase',
+              fontWeight: 700,
             }}
           >
             바로가기
           </h3>
           <div className="grid grid-cols-3 gap-2">
-            {SHORTCUTS.map((sc) => (
-              <Link
-                key={sc.to}
-                to={sc.to}
-                className="t-label flex h-12 items-center justify-center rounded-xl"
-                style={{
-                  background: 'var(--surface)',
-                  border: '1px solid var(--border-subtle)',
-                  color: 'var(--text-primary)',
-                  textDecoration: 'none',
-                  fontWeight: 500,
-                }}
-              >
-                {sc.label}
-              </Link>
-            ))}
+            {SHORTCUTS.map((sc) => {
+              const Icon = sc.icon;
+              return (
+                <Link
+                  key={sc.to}
+                  to={sc.to}
+                  className="flex flex-col items-center justify-center gap-1.5 rounded-2xl py-4"
+                  style={{
+                    background: 'var(--surface)',
+                    border: '1px solid var(--border-subtle)',
+                    color: 'var(--text-primary)',
+                    textDecoration: 'none',
+                    boxShadow: 'var(--elev-1)',
+                    transition: 'box-shadow 200ms cubic-bezier(0.32, 0.72, 0, 1)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = 'var(--elev-2)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = 'var(--elev-1)';
+                  }}
+                >
+                  <span
+                    className="flex h-8 w-8 items-center justify-center rounded-full"
+                    style={{
+                      background: 'var(--accent-brand-soft)',
+                      color: 'var(--accent-brand)',
+                    }}
+                  >
+                    <Icon size={16} strokeWidth={2} />
+                  </span>
+                  <span
+                    className="t-caption"
+                    style={{ fontWeight: 600, fontSize: 12 }}
+                  >
+                    {sc.label}
+                  </span>
+                </Link>
+              );
+            })}
           </div>
         </section>
       </div>

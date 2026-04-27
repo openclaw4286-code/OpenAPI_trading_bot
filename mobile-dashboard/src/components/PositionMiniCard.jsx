@@ -1,17 +1,21 @@
 import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
+import Sparkline from './Sparkline.jsx';
 import {
   formatPrice,
   formatRMultiple,
   sentimentColor,
 } from '../data/format.js';
+import { pricePath } from '../data/series.js';
 
-// Position row, Toss-style: chunky brand badge + bold name on top, big
-// price as the headline number, R-multiple in a coloured chip on the
-// right that doubles as the visual sentiment cue. TP progress dots sit
-// under the price like a battery gauge. No decorative background —
-// keep the card visually quiet so the data shouts.
-
+/**
+ * Position list row — Toss-style headline price + sentiment chip,
+ * with a small (52×16) sparkline tucked between the metadata row and
+ * the TP-progress battery so each card carries a price story without
+ * dominating the type. Subtle hover lift via box-shadow + transform
+ * on pointer devices; mobile press triggers a 0.985 scale tap so
+ * touch users get tactile feedback.
+ */
 const TP_TOTAL = 3;
 
 export default function PositionMiniCard({ position }) {
@@ -23,6 +27,7 @@ export default function PositionMiniCard({ position }) {
   const glyph = firstGlyph(position.name);
   const tpDone = [position.tp1Done, position.tp2Done, position.tp3Done];
   const tpCount = tpDone.filter(Boolean).length;
+  const path = pricePath(position.symbol, position.entry, position.currentPrice, 32);
 
   return (
     <Link
@@ -34,16 +39,32 @@ export default function PositionMiniCard({ position }) {
         boxShadow: 'var(--elev-1)',
         textDecoration: 'none',
         color: 'inherit',
+        transition: 'box-shadow 200ms cubic-bezier(0.32, 0.72, 0, 1), transform 160ms cubic-bezier(0.32, 0.72, 0, 1)',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.boxShadow = 'var(--elev-2)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.boxShadow = 'var(--elev-1)';
+        e.currentTarget.style.transform = '';
+      }}
+      onPointerDown={(e) => {
+        e.currentTarget.style.transform = 'scale(0.985)';
+      }}
+      onPointerUp={(e) => {
+        e.currentTarget.style.transform = '';
       }}
     >
       <div className="flex items-center gap-3">
         <div
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+          className="flex shrink-0 items-center justify-center rounded-xl"
           style={{
+            width: 44,
+            height: 44,
             background: 'var(--accent-brand-soft)',
             color: 'var(--accent-brand)',
             fontWeight: 800,
-            fontSize: 17,
+            fontSize: 18,
             letterSpacing: '-0.02em',
           }}
         >
@@ -66,30 +87,32 @@ export default function PositionMiniCard({ position }) {
         <ChevronRight
           size={18}
           strokeWidth={1.75}
-          style={{ color: 'var(--text-tertiary)' }}
+          style={{ color: 'var(--text-tertiary)', flexShrink: 0 }}
         />
       </div>
 
       <div className="mt-3 flex items-end justify-between gap-3">
-        <div>
+        <div className="min-w-0 flex-1">
           <div
             className="num-mono"
             style={{
-              fontSize: 24,
-              lineHeight: '30px',
+              fontSize: 26,
+              lineHeight: '32px',
               fontWeight: 800,
               color: 'var(--text-primary)',
-              letterSpacing: '-0.015em',
+              letterSpacing: '-0.02em',
             }}
           >
             ₩{formatPrice(position.currentPrice)}
           </div>
-          <div className="mt-1.5 flex items-center gap-1">
+          <div className="mt-2 flex items-center gap-1">
             {Array.from({ length: TP_TOTAL }).map((_, i) => (
               <span
                 key={i}
-                className="h-1.5 w-5 rounded-full"
+                className="rounded-full"
                 style={{
+                  width: 18,
+                  height: 4,
                   background: tpDone[i]
                     ? 'var(--state-positive)'
                     : 'var(--surface-sunken)',
@@ -97,24 +120,37 @@ export default function PositionMiniCard({ position }) {
               />
             ))}
             <span
-              className="t-caption ml-1 num-mono"
-              style={{ color: 'var(--text-tertiary)' }}
+              className="t-caption ml-1.5 num-mono"
+              style={{ color: 'var(--text-tertiary)', fontSize: 11 }}
             >
               TP {tpCount}/{TP_TOTAL}
             </span>
           </div>
         </div>
-        <span
-          className="num-mono inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 t-label"
-          style={{
-            background: sentimentSoft,
-            color: dirColor,
-            fontWeight: 800,
-            fontSize: 14,
-          }}
-        >
-          {formatRMultiple(position.rMultiple)}
-        </span>
+        <div className="flex flex-col items-end gap-1.5">
+          <Sparkline
+            data={path}
+            width={52}
+            height={16}
+            strokeWidth={1.5}
+            color={dirColor}
+            fill={false}
+          />
+          <span
+            className="num-mono inline-flex items-center justify-center rounded-lg"
+            style={{
+              minWidth: 60,
+              padding: '4px 8px',
+              background: sentimentSoft,
+              color: dirColor,
+              fontWeight: 800,
+              fontSize: 13,
+              letterSpacing: '-0.005em',
+            }}
+          >
+            {formatRMultiple(position.rMultiple)}
+          </span>
+        </div>
       </div>
     </Link>
   );

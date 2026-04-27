@@ -5,6 +5,13 @@ import SearchField from '@ds/components/SearchField.jsx';
 import EmptyScaffold from '@ds/components/EmptyScaffold.jsx';
 import { MOCK_SIGNALS } from '../data/mock.js';
 
+/**
+ * Today's signals timeline. Each row is a signal record with its
+ * outcome (approved / rejected / wait), reasoning, and meta. A pill
+ * filter strip + symbol-name SearchField above the list lets the
+ * operator narrow down to a specific cohort or ticker.
+ */
+
 const FILTERS = [
   { key: 'all',      label: '전체' },
   { key: 'approved', label: '승인' },
@@ -16,19 +23,19 @@ const OUTCOME_VISUAL = {
   approved: {
     icon: Check,
     color: 'var(--state-positive)',
-    bg: 'var(--state-positive-soft)',
+    softBg: 'var(--state-positive-soft)',
     label: 'APPROVED',
   },
   rejected: {
     icon: X,
     color: 'var(--state-negative)',
-    bg: 'var(--state-negative-soft)',
+    softBg: 'var(--state-negative-soft)',
     label: 'REJECTED',
   },
   wait: {
     icon: Clock,
     color: 'var(--state-warning)',
-    bg: 'var(--state-warning-soft)',
+    softBg: 'var(--state-warning-soft)',
     label: 'WAIT',
   },
 };
@@ -42,44 +49,55 @@ function SignalRow({ sig }) {
       style={{
         background: 'var(--surface)',
         border: '1px solid var(--border-subtle)',
+        boxShadow: 'var(--elev-1)',
+        borderLeft: `3px solid ${v.color}`,
       }}
     >
       <div className="flex items-center gap-2">
         <span
-          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
-          style={{ background: v.bg, color: v.color }}
+          className="num-mono inline-flex items-center gap-1 rounded-full px-2 py-0.5"
+          style={{
+            background: v.softBg,
+            color: v.color,
+            fontWeight: 800,
+            fontSize: 11,
+            letterSpacing: '0.04em',
+          }}
         >
-          <Icon size={13} strokeWidth={2.5} />
-        </span>
-        <span
-          className="t-caption shrink-0"
-          style={{ fontWeight: 700, color: v.color, letterSpacing: '0.02em' }}
-        >
+          <Icon size={11} strokeWidth={2.75} />
           {v.label}
         </span>
         <span
-          className="t-caption num-mono shrink-0"
+          className="t-caption num-mono"
           style={{ color: 'var(--text-tertiary)' }}
         >
           {sig.ts}
         </span>
         <span className="flex-1" />
         <span
-          className="t-label num-mono shrink-0"
-          style={{ fontWeight: 600 }}
+          className="t-body2 num-mono shrink-0"
+          style={{ fontWeight: 700, color: 'var(--text-primary)' }}
         >
           {sig.symbol}
         </span>
       </div>
       <div
-        className="mt-2 t-caption num-mono"
+        className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 t-caption num-mono"
         style={{ color: 'var(--text-secondary)' }}
       >
-        rr {sig.rr.toFixed(1)} · {sig.poiKind ?? '—'} · {sig.triggerKind} ·{' '}
-        {sig.session}
-        {sig.outcome === 'approved' && ` · LLM conf ${sig.llmConf.toFixed(2)}`}
+        <span>
+          rr <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{sig.rr.toFixed(1)}</span>
+        </span>
+        <span>{sig.poiKind ?? '—'}</span>
+        <span>{sig.triggerKind}</span>
+        <span>{sig.session}</span>
+        {sig.outcome === 'approved' && (
+          <span>
+            LLM <span style={{ fontWeight: 700, color: v.color }}>{sig.llmConf.toFixed(2)}</span>
+          </span>
+        )}
       </div>
-      <p className="mt-1 t-body2" style={{ color: 'var(--text-primary)' }}>
+      <p className="mt-2 t-body2" style={{ color: 'var(--text-primary)', lineHeight: 1.5 }}>
         {sig.rationale}
       </p>
     </article>
@@ -107,15 +125,15 @@ export default function Signals() {
   return (
     <>
       <ScreenHeader title="오늘 신호" />
-      <div className="p-4 pb-8">
+      <div className="flex flex-col gap-3 p-4 pb-8">
         <SearchField
           value={q}
           onChange={setQ}
           placeholder="종목코드 또는 이름"
-          className="mb-3 w-full"
+          className="w-full"
         />
         <div
-          className="no-scrollbar -mx-1 mb-3 flex gap-1.5 overflow-x-auto px-1"
+          className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1"
           role="tablist"
         >
           {FILTERS.map((f) => {
@@ -128,13 +146,14 @@ export default function Signals() {
                 style={{
                   background: active
                     ? 'var(--accent-brand)'
-                    : 'var(--surface-layered)',
+                    : 'var(--surface)',
                   color: active ? '#FFFFFF' : 'var(--text-secondary)',
-                  fontWeight: 600,
+                  fontWeight: 700,
                   border: active
                     ? 'none'
-                    : '1px solid var(--border-subtle)',
-                  transition: 'background var(--dur-fast) var(--ease-soft)',
+                    : '1px solid var(--border-default)',
+                  transition: 'background 200ms cubic-bezier(0.32, 0.72, 0, 1)',
+                  boxShadow: active ? 'var(--elev-1)' : 'none',
                 }}
                 role="tab"
                 aria-selected={active}
