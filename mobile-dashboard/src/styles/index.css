@@ -1,0 +1,85 @@
+/*
+ * Import the tokens FIRST and explicitly. The bundle entry
+ * `908-doha.css` contains `@import url('./908-doha.tokens.css')`,
+ * but Vite/postcss-import skips the url() form on Google Fonts and
+ * relative siblings inconsistently — the result is a CSS bundle with
+ * @font-face + reset present but ZERO :root tokens, so every
+ * `var(--accent-brand)` resolves to nothing and the whole UI looks
+ * desaturated. Importing tokens explicitly side-steps the bug.
+ */
+@import '../../../908-doha-ui/styles/908-doha.tokens.css';
+@import '../../../908-doha-ui/styles/908-doha.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+  overscroll-behavior-y: contain;
+}
+
+body {
+  background: var(--background);
+}
+
+/* ----------------------------------------------------------------
+   Keyframes the 908-doha-ui components reference but the design
+   system's CSS bundle doesn't actually define. Without these, Modal
+   doesn't fade in, Skeleton doesn't shimmer, Toast doesn't slide,
+   FormSelect/SlashMenu dropdowns don't ease in, and the whole UI
+   looks static. Names match the ones referenced in the design-system
+   source so animations Just Work the moment these definitions land.
+   ---------------------------------------------------------------- */
+@keyframes dsFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes dsSlideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes dsSkeleton {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes dsToastIn {
+  0%   { opacity: 0; transform: translateY(20px) scale(0.96); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes dsToastOut {
+  0%   { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-8px); }
+}
+
+@keyframes dsSelectFade {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes dsPageIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes dsPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.55; transform: scale(0.85); }
+}
+
+/* Mono numerals — applied wherever a number must not jump width */
+.num-mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Hide scrollbars on horizontal scroll strips */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
