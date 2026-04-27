@@ -1,3 +1,13 @@
+/*
+ * Import the tokens FIRST and explicitly. The bundle entry
+ * `908-doha.css` contains `@import url('./908-doha.tokens.css')`,
+ * but Vite/postcss-import skips the url() form on Google Fonts and
+ * relative siblings inconsistently — the result is a CSS bundle with
+ * @font-face + reset present but ZERO :root tokens, so every
+ * `var(--accent-brand)` resolves to nothing and the whole UI looks
+ * desaturated. Importing tokens explicitly side-steps the bug.
+ */
+@import '../../../908-doha-ui/styles/908-doha.tokens.css';
 @import '../../../908-doha-ui/styles/908-doha.css';
 
 @tailwind base;
